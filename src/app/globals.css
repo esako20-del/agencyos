@@ -5,7 +5,7 @@
 @layer base {
   :root {
     --font-display: 'Syne', sans-serif;
-    --font-body: 'Instrument Sans', sans-serif;
+    --font-body: 'Instrument Sans', system-ui, sans-serif;
     --font-mono: 'JetBrains Mono', monospace;
   }
 
