@@ -1,15 +1,7 @@
 import { formatCurrency, calcPercent } from '@/lib/utils'
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 
-// In production these come from Supabase
 const PERSONAL_YTD = 74000
 const PERSONAL_GOAL = 200000
-const MONTHLY_DATA = [
-  { label: 'Nov', value: 9800 }, { label: 'Dec', value: 10200 },
-  { label: 'Jan', value: 12400 }, { label: 'Feb', value: 11800 },
-  { label: 'Mar', value: 13600 }, { label: 'Apr', value: 14200 },
-  { label: 'May', value: 14800 },
-]
 const MONTHS_REMAINING = 7.5
 const NEEDED_PER_MONTH = Math.ceil((PERSONAL_GOAL - PERSONAL_YTD) / MONTHS_REMAINING)
 const pct = calcPercent(PERSONAL_YTD, PERSONAL_GOAL)
@@ -17,7 +9,6 @@ const pct = calcPercent(PERSONAL_YTD, PERSONAL_GOAL)
 export default function ProductionPage() {
   return (
     <div className="space-y-5 animate-in">
-      {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
           { label: 'Personal ALP — YTD', value: formatCurrency(PERSONAL_YTD, true), sub: `Goal: ${formatCurrency(PERSONAL_GOAL, true)} · ${pct}% done`, color: 'green' },
@@ -27,14 +18,13 @@ export default function ProductionPage() {
         ].map(k => (
           <div key={k.label} className={`kpi-card ${k.color}`}>
             <div className="text-[9px] text-text-muted uppercase tracking-[1.5px] font-mono mb-2">{k.label}</div>
-            <div className={`font-display text-2xl font-bold text-accent-${k.color === 'blue' ? 'blue2' : k.color === 'amber' ? 'amber' : 'green'}`}>{k.value}</div>
+            <div className={`font-display text-2xl font-bold ${k.color === 'blue' ? 'text-accent-blue2' : k.color === 'amber' ? 'text-accent-amber' : 'text-accent-green'}`}>{k.value}</div>
             <div className="text-[10px] text-text-muted mt-1.5">{k.sub}</div>
           </div>
         ))}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        {/* Goal Progress */}
         <div className="panel">
           <div className="panel-head"><div className="panel-title">$200K Annual Goal Progress</div></div>
           <div className="p-5">
@@ -62,7 +52,6 @@ export default function ProductionPage() {
           </div>
         </div>
 
-        {/* Activity Blueprint */}
         <div className="panel">
           <div className="panel-head"><div className="panel-title">Activity Blueprint to Hit {formatCurrency(NEEDED_PER_MONTH, true)}/mo</div></div>
           <div className="p-4 space-y-2">
@@ -83,30 +72,6 @@ export default function ProductionPage() {
         </div>
       </div>
 
-      {/* Monthly chart */}
-      <div className="panel">
-        <div className="panel-head"><div className="panel-title">Personal Monthly Production History</div></div>
-        <div className="p-4">
-          <ResponsiveContainer width="100%" height={130}>
-            <BarChart data={MONTHLY_DATA} barSize={32} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-              <XAxis dataKey="label" tick={{ fill: '#3D5068', fontSize: 10, fontFamily: 'JetBrains Mono' }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: '#3D5068', fontSize: 9, fontFamily: 'JetBrains Mono' }} axisLine={false} tickLine={false} tickFormatter={v => `$${v / 1000}K`} />
-              <Tooltip
-                cursor={{ fill: 'rgba(255,255,255,0.02)' }}
-                contentStyle={{ background: '#111820', border: '1px solid #243040', borderRadius: 8, fontSize: 11, fontFamily: 'JetBrains Mono' }}
-                formatter={(v: any) => [`$${(v / 1000).toFixed(1)}K`, 'ALP']}
-              />
-              <Bar dataKey="value" radius={[3, 3, 0, 0]}>
-                {MONTHLY_DATA.map((_, i) => (
-                  <Cell key={i} fill={i === MONTHLY_DATA.length - 1 ? '#3B82F6' : 'rgba(0,229,160,0.35)'} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      {/* Conversion funnel + Top producer comparison */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <div className="panel">
           <div className="panel-head"><div className="panel-title">Your Conversion Funnel</div></div>
