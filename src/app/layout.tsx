@@ -12,7 +12,7 @@ const syne = Syne({
 const jetbrainsMono = JetBrains_Mono({ 
   subsets: ['latin'], 
   variable: '--font-mono', 
-  weight: ['300','400','500'] 
+  weight: ['400','500'] 
 })
 
 export const metadata: Metadata = {
