@@ -102,9 +102,9 @@
 
   /* Alert */
   .alert { @apply flex items-start gap-3 px-4 py-3 rounded-lg text-sm; }
-  .alert-red    { @apply bg-accent-red/7 border border-accent-red/15; }
-  .alert-amber  { @apply bg-accent-amber/7 border border-accent-amber/15; }
-  .alert-green  { @apply bg-accent-green/7 border border-accent-green/15; }
+.alert-red    { @apply bg-accent-red/10 border border-accent-red/20; }
+.alert-amber  { @apply bg-accent-amber/10 border border-accent-amber/20; }
+.alert-green  { @apply bg-accent-green/10 border border-accent-green/20; }
 
   /* Nav item */
   .nav-item {
