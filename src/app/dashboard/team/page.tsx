@@ -2,6 +2,7 @@
 import { useState } from 'react'
 
 const AGENTS = [
+  { id: '20', full_name: 'Enri S.', role: 'Agency Owner · A Tier', tier: 'a_tier', ytd: 74000, month: 14800, sits: 24, close: 48, refs: 6, leads: 'Union+Vet', streak: 18, health: 'green', initials: 'ES', color: '#00E5A0' },
   { id: '1', full_name: 'Jonis H.', role: 'Top Producer', tier: 's_tier', ytd: 182000, month: 13100, sits: 24, close: 58, refs: 9, leads: 'Union+Vet', streak: 22, health: 'green', initials: 'JH', color: '#F59E0B' },
   { id: '2', full_name: 'Caitlyn R.', role: 'A Tier Producer', tier: 'a_tier', ytd: 115000, month: 9800, sits: 21, close: 52, refs: 7, leads: 'Union+POS', streak: 14, health: 'green', initials: 'CR', color: '#00E5A0' },
   { id: '3', full_name: 'Luis K.', role: 'A Tier Producer', tier: 'a_tier', ytd: 102000, month: 8700, sits: 19, close: 49, refs: 6, leads: 'Union', streak: 11, health: 'green', initials: 'LK', color: '#00E5A0' },
@@ -24,9 +25,9 @@ const AGENTS = [
 ]
 
 const TABS = [
-  { label: 'All (19)', value: 'all' },
+  { label: 'All (20)', value: 'all' },
   { label: 'S Tier (1)', value: 's_tier' },
-  { label: 'A Tier (2)', value: 'a_tier' },
+  { label: 'A Tier (3)', value: 'a_tier' },
   { label: 'B Tier (4)', value: 'b_tier' },
   { label: 'C Tier (7)', value: 'c_tier' },
   { label: 'T Tier (2)', value: 't_tier' },
