@@ -1,11 +1,10 @@
-import { Suspense } from 'react'
 import KPIGrid from '@/components/dashboard/KPIGrid'
 import TeamALPChart from '@/components/charts/TeamALPChart'
 import LeaderboardPanel from '@/components/dashboard/LeaderboardPanel'
 import AlertsPanel from '@/components/dashboard/AlertsPanel'
 import { TodayActivity, ActivityFeed } from '@/components/dashboard/ActivityFeed'
 
-export default async function DashboardPage() {
+export default function DashboardPage() {
   const todayTotals = {
     dials: 284, appointments: 31, sits: 22, sales: 9, alp: 8400,
     refAppts: 8, refSits: 5, refSales: 3, refAlp: 2800,
@@ -18,8 +17,8 @@ export default async function DashboardPage() {
         personalMonthlyAlp={14800}
         consistentAgents={4}
         teamYtdAlp={182000}
-        activeAgents={9}
-        totalAgents={13}
+        activeAgents={17}
+        totalAgents={20}
         missingReports={4}
         closeRate={42}
         referralRate={1.8}
