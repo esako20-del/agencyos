@@ -1,22 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 
-const AGENT_MAP: Record<string, string> = {
-  'Marcus W.': '1',
-  'DeShawn T.': '2',
-  'Priya S.': '3',
-  'Jordan R.': '4',
-  'Keisha M.': '5',
-  'Tyler B.': '6',
-  'Aisha N.': '7',
-  'Carlos V.': '8',
-  'Destiny H.': '9',
-  'Omar F.': '10',
-  'Grace L.': '11',
-  'Brandon K.': '12',
-  'Tamara J.': '13',
-}
-
 export async function POST(req: NextRequest) {
   try {
     const contentType = req.headers.get('content-type') ?? ''
@@ -30,25 +14,52 @@ export async function POST(req: NextRequest) {
       params.forEach((value, key) => { body[key] = value })
     }
 
-    // Extract fields from JotForm submission
-    const agentName = body['q1_agentName'] || body['agent_name'] || body['Agent Name'] || ''
-    const reportDate = body['q10_reportDate'] || body['report_date'] || body['Report Date'] || new Date().toISOString().split('T')[0]
-    const appointments = parseInt(body['q2_totalAppointments'] || body['Total Appointments'] || '0')
-    const sits = parseInt(body['q3_totalSits'] || body['Total Sits'] || '0')
-    const sales = parseInt(body['q4_sales'] || body['Sales'] || '0')
-    const alp = parseFloat(body['q5_alp'] || body['ALP'] || '0')
-    const refAppts = parseInt(body['q6_referralAppointments'] || body['Referral Appointments'] || '0')
-    const refSits = parseInt(body['q7_referralSits'] || body['Referral Sits'] || '0')
-    const refSales = parseInt(body['q8_referralSales'] || body['Referral Sales'] || '0')
-    const refAlp = parseFloat(body['q9_referralAlp'] || body['Referral ALP'] || '0')
-    const winOfDay = body['q11_winOf'] || body['Win of the Day'] || ''
-    const struggles = body['q12_notes'] || body['Notes / Struggles'] || ''
+    // Log the full body so we can see exact field names
+    console.log('JotForm submission:', JSON.stringify(body))
 
-    // Find agent in database by name
+    // Extract agent name — try multiple possible keys
+    let agentName = ''
+    let reportDate = new Date().toISOString().split('T')[0]
+    let appointments = 0
+    let sits = 0
+    let sales = 0
+    let alp = 0
+    let refAppts = 0
+    let refSits = 0
+    let refSales = 0
+    let refAlp = 0
+    let winOfDay = ''
+    let struggles = ''
+
+    // Loop through all fields to find matches
+    Object.keys(body).forEach(key => {
+      const val = body[key]
+      const keyLower = key.toLowerCase()
+
+      if (keyLower.includes('agent')) agentName = val
+      else if (keyLower.includes('date') && !keyLower.includes('submission')) reportDate = val
+      else if (keyLower.includes('totalappointments') || keyLower.includes('total_appointments') || keyLower.includes('appointments')) appointments = parseInt(val) || 0
+      else if (keyLower.includes('totalsits') || keyLower.includes('total_sits') || keyLower.includes('sits')) sits = parseInt(val) || 0
+      else if (keyLower.includes('sales') && !keyLower.includes('referral')) sales = parseInt(val) || 0
+      else if (keyLower.includes('alp') && !keyLower.includes('referral')) alp = parseFloat(val) || 0
+      else if (keyLower.includes('referral') && keyLower.includes('appointment')) refAppts = parseInt(val) || 0
+      else if (keyLower.includes('referral') && keyLower.includes('sit')) refSits = parseInt(val) || 0
+      else if (keyLower.includes('referral') && keyLower.includes('sale')) refSales = parseInt(val) || 0
+      else if (keyLower.includes('referral') && keyLower.includes('alp')) refAlp = parseFloat(val) || 0
+      else if (keyLower.includes('win')) winOfDay = val
+      else if (keyLower.includes('note') || keyLower.includes('struggle')) struggles = val
+    })
+
+    if (!agentName) {
+      return NextResponse.json({ error: 'Agent name not found', body }, { status: 400 })
+    }
+
+    // Find agent in database
+    const firstName = agentName.split(' ')[0]
     const { data: agents } = await supabaseAdmin
       .from('agents')
       .select('id, full_name')
-      .ilike('full_name', `%${agentName.split(' ')[0]}%`)
+      .ilike('full_name', `%${firstName}%`)
       .limit(1)
 
     if (!agents || agents.length === 0) {
@@ -74,6 +85,7 @@ export async function POST(req: NextRequest) {
       .upsert({
         agent_id: agentId,
         report_date: formattedDate,
+        dials: 0,
         appointments_set: appointments,
         sits,
         sales,
@@ -85,7 +97,6 @@ export async function POST(req: NextRequest) {
         win_of_day: winOfDay,
         struggles,
         submitted_at: new Date().toISOString(),
-        dials: 0,
       }, { onConflict: 'agent_id,report_date' })
       .select()
       .single()
