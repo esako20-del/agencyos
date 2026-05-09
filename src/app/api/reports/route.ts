@@ -3,55 +3,37 @@ import { supabaseAdmin } from '@/lib/supabase'
 
 export async function POST(req: NextRequest) {
   try {
-    const contentType = req.headers.get('content-type') ?? ''
-    let body: any = {}
+    const text = await req.text()
 
-    if (contentType.includes('application/json')) {
-      body = await req.json()
-    } else {
-      const text = await req.text()
-      const params = new URLSearchParams(text)
-      params.forEach((value, key) => { body[key] = value })
+    // Extract rawRequest from multipart form data
+    const rawRequestMatch = text.match(/"rawRequest"\r\n\r\n({.*?})\r\n/s)
+    if (!rawRequestMatch) {
+      return NextResponse.json({ error: 'No rawRequest found' }, { status: 400 })
     }
 
-    // Log the full body so we can see exact field names
-    console.log('JotForm submission:', JSON.stringify(body))
+    const raw = JSON.parse(rawRequestMatch[1])
+    console.log('Parsed raw:', JSON.stringify(raw))
 
-    // Extract agent name — try multiple possible keys
-    let agentName = ''
-    let reportDate = new Date().toISOString().split('T')[0]
-    let appointments = 0
-    let sits = 0
-    let sales = 0
-    let alp = 0
-    let refAppts = 0
-    let refSits = 0
-    let refSales = 0
-    let refAlp = 0
-    let winOfDay = ''
-    let struggles = ''
+    // Extract fields using exact JotForm field names
+    const agentName = raw['q3_agentName'] ?? ''
+    const dateObj = raw['q14_date'] ?? {}
+    const appointments = parseInt(raw['q5_totalAppointments'] ?? '0')
+    const sits = parseInt(raw['q6_totalSits'] ?? '0')
+    const sales = parseInt(raw['q8_number8'] ?? '0')
+    const alp = parseFloat(raw['q9_number9'] ?? '0')
+    const refAppts = parseInt(raw['q10_number10'] ?? '0')
+    const refSits = parseInt(raw['q11_number11'] ?? '0')
+    const refSales = parseInt(raw['q12_number12'] ?? '0')
+    const refAlp = parseFloat(raw['q13_number13'] ?? '0')
 
-    // Loop through all fields to find matches
-    Object.keys(body).forEach(key => {
-      const val = body[key]
-      const keyLower = key.toLowerCase()
-
-      if (keyLower.includes('agent')) agentName = val
-      else if (keyLower.includes('date') && !keyLower.includes('submission')) reportDate = val
-      else if (keyLower.includes('totalappointments') || keyLower.includes('total_appointments') || keyLower.includes('appointments')) appointments = parseInt(val) || 0
-      else if (keyLower.includes('totalsits') || keyLower.includes('total_sits') || keyLower.includes('sits')) sits = parseInt(val) || 0
-      else if (keyLower.includes('sales') && !keyLower.includes('referral')) sales = parseInt(val) || 0
-      else if (keyLower.includes('alp') && !keyLower.includes('referral')) alp = parseFloat(val) || 0
-      else if (keyLower.includes('referral') && keyLower.includes('appointment')) refAppts = parseInt(val) || 0
-      else if (keyLower.includes('referral') && keyLower.includes('sit')) refSits = parseInt(val) || 0
-      else if (keyLower.includes('referral') && keyLower.includes('sale')) refSales = parseInt(val) || 0
-      else if (keyLower.includes('referral') && keyLower.includes('alp')) refAlp = parseFloat(val) || 0
-      else if (keyLower.includes('win')) winOfDay = val
-      else if (keyLower.includes('note') || keyLower.includes('struggle')) struggles = val
-    })
+    // Format date from JotForm date object {month, day, year}
+    let formattedDate = new Date().toISOString().split('T')[0]
+    if (dateObj.year && dateObj.month && dateObj.day) {
+      formattedDate = `${dateObj.year}-${dateObj.month.padStart(2,'0')}-${dateObj.day.padStart(2,'0')}`
+    }
 
     if (!agentName) {
-      return NextResponse.json({ error: 'Agent name not found', body }, { status: 400 })
+      return NextResponse.json({ error: 'Agent name missing' }, { status: 400 })
     }
 
     // Find agent in database
@@ -68,17 +50,6 @@ export async function POST(req: NextRequest) {
 
     const agentId = agents[0].id
 
-    // Format date
-    let formattedDate = new Date().toISOString().split('T')[0]
-    if (reportDate) {
-      try {
-        const d = new Date(reportDate)
-        if (!isNaN(d.getTime())) {
-          formattedDate = d.toISOString().split('T')[0]
-        }
-      } catch (e) {}
-    }
-
     // Save to database
     const { data, error } = await supabaseAdmin
       .from('daily_reports')
@@ -94,8 +65,6 @@ export async function POST(req: NextRequest) {
         referral_sits: refSits,
         referral_sales: refSales,
         referral_alp: refAlp,
-        win_of_day: winOfDay,
-        struggles,
         submitted_at: new Date().toISOString(),
       }, { onConflict: 'agent_id,report_date' })
       .select()
