@@ -26,7 +26,7 @@ const AGENTS: Record<string, any> = {
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
 const TIERS = ['S Tier', 'A Tier', 'B Tier', 'C Tier', 'T Tier', 'I Tier']
-const LEAD_TYPES = ['Union', 'Veteran', 'Union + Veteran', 'Union + POS', 'New Pack', 'N/A']
+const LEAD_TYPES = ['Union', 'Veteran', 'POS', 'Union + Veteran', 'Union + POS', 'Union + POS + Veteran', 'New Pack', 'N/A']
 
 export default function AgentProfilePage({ params }: { params: { id: string } }) {
   const baseAgent = AGENTS[params.id]
