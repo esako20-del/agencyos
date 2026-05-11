@@ -28,7 +28,11 @@ const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov
 const TIERS = ['S Tier', 'A Tier', 'B Tier', 'C Tier', 'T Tier', 'I Tier']
 const LEAD_TYPES = ['Union', 'Veteran', 'POS', 'Union + Veteran', 'Union + POS', 'Union + POS + Veteran', 'New Pack', 'N/A']
 
-const DEFAULT_STATS = {
+const DEFAULT_STATS: {
+  ytd: number; month: number; close: number; sits: number; dials: number;
+  refs: number; streak: number; health: string; leads: string;
+  monthly: number[]; coaching: string[];
+} = {
   ytd: 0, month: 0, close: 0, sits: 0, dials: 0,
   refs: 0, streak: 0, health: 'yellow', leads: 'New Pack',
   monthly: [0,0,0,0,0,0,0,0,0,0,0,0],
