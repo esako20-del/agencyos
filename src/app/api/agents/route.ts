@@ -1,61 +1,51 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseServer } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabase'
 
 export async function GET(req: NextRequest) {
-  const supabase = supabaseServer()
   const { searchParams } = new URL(req.url)
-  const tier = searchParams.get('tier')
+  const id = searchParams.get('id')
 
-  let query = supabase
+  if (id) {
+    const { data, error } = await supabaseAdmin
+      .from('agents')
+      .select('*')
+      .eq('id', id)
+      .single()
+    if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+    return NextResponse.json({ data })
+  }
+
+  const { data, error } = await supabaseAdmin
     .from('agents')
-    .select('*, manager:profiles!manager_id(full_name)')
-    .eq('is_active', true)
+    .select('*')
     .order('full_name')
+  if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+  return NextResponse.json({ data })
+}
 
-  if (tier) query = query.eq('tier', tier)
-  const { data, error } = await query
+export async function PATCH(req: NextRequest) {
+  const body = await req.json()
+  const { id, ...updates } = body
+
+  if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 })
+
+  const { data, error } = await supabaseAdmin
+    .from('agents')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select()
+    .single()
+
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
   return NextResponse.json({ data })
 }
 
 export async function POST(req: NextRequest) {
-  const supabase = supabaseServer()
-  const { data: { session } } = await supabase.auth.getSession()
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
   const body = await req.json()
-  const { data, error } = await supabase.from('agents').insert(body).select().single()
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 })
 
-  // Auto-create training milestones from template
-  const { data: template } = await supabase
-    .from('onboarding_checklist_template')
-    .select('*')
-    .order('order_index')
-
-  if (template && data?.id) {
-    await supabase.from('training_milestones').insert(
-      template.map((t: any) => ({
-        agent_id: data.id,
-        milestone: t.milestone,
-        order_index: t.order_index,
-        completed: false,
-      }))
-    )
-  }
-
-  return NextResponse.json({ data })
-}
-
-export async function PATCH(req: NextRequest) {
-  const supabase = supabaseServer()
-  const body = await req.json()
-  const { id, ...updates } = body
-
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from('agents')
-    .update({ ...updates, updated_at: new Date().toISOString() })
-    .eq('id', id)
+    .insert(body)
     .select()
     .single()
 
