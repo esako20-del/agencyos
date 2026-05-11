@@ -1,3 +1,4 @@
+'use client'
 import { cn, formatCurrency } from '@/lib/utils'
 import { TrendingUp, TrendingDown } from 'lucide-react'
 
@@ -18,16 +19,13 @@ function KPICard({ label, value, sub, color = 'green', trend, trendUp }: {
   label: string; value: string; sub?: string; color?: string
   trend?: string; trendUp?: boolean
 }) {
-  const colorMap: Record<string, string> = {
-    green: 'green', blue: 'blue', amber: 'amber', red: 'red', purple: 'purple'
-  }
   const textMap: Record<string, string> = {
     green: 'text-accent-green', blue: 'text-accent-blue2',
     amber: 'text-accent-amber', red: 'text-accent-red', purple: 'text-accent-purple'
   }
 
   return (
-    <div className={cn('kpi-card', colorMap[color])}>
+    <div className={cn('kpi-card', color)}>
       <div className="text-[9px] text-text-muted uppercase tracking-[1.5px] font-mono mb-2">{label}</div>
       <div className={cn('font-display text-2xl font-bold leading-none', textMap[color])}>{value}</div>
       {sub && <div className="text-[10px] text-text-muted mt-1.5">{sub}</div>}
@@ -51,23 +49,23 @@ export default function KPIGrid(props: KPIProps) {
         <KPICard
           label="Team ALP — Month"
           value={formatCurrency(props.teamMonthlyAlp, true)}
-          sub={`Goal: ${formatCurrency(50000, true)}/mo`}
+          sub="Goal: $50K/mo"
           color="green"
           trend="↑ 12%"
           trendUp
         />
         <KPICard
-          label="Personal ALP — Month"
+          label="My ALP — Month"
           value={formatCurrency(props.personalMonthlyAlp, true)}
-          sub="Pace: $177K/yr"
+          sub="Goal: $200K/yr"
           color="blue"
           trend="↑ 6%"
           trendUp
         />
         <KPICard
-          label="Consistent Agents"
-          value={String(props.consistentAgents)}
-          sub="Goal: 8 agents"
+          label="S + A Tier Agents"
+          value="3"
+          sub="Jonis · Caitlyn · Luis"
           color="amber"
         />
         <KPICard
@@ -81,7 +79,7 @@ export default function KPIGrid(props: KPIProps) {
         <KPICard
           label="Active / Total"
           value={`${props.activeAgents}/${props.totalAgents}`}
-          sub="Goal: 26 agents"
+          sub="17 active · 3 inactive"
           color="purple"
         />
       </div>
