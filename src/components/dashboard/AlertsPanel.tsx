@@ -25,32 +25,28 @@ function AlertRow({ type, message, time }: Alert) {
 }
 
 export default function AlertsPanel({ missingReports }: { missingReports: any[] }) {
-  const missingNames = missingReports.map((r: any) => r.full_name).join(', ')
-
   const alerts: Alert[] = [
-    ...(missingReports.length > 0 ? [{
-      type: 'red' as const,
-      message: `<strong>${missingReports.length} agents</strong> have not submitted tonight's report${missingNames ? ` — ${missingNames}` : ''}. Automated SMS sent.`,
+    {
+      type: 'red',
+      message: '<strong>4 agents</strong> have not submitted tonight\'s report. Automated SMS sent.',
       time: '8:42 PM',
-    }] : []),
+    },
     {
       type: 'amber',
-      message: '<strong>Tyler B.</strong> has had 0 sales for 9 consecutive days — coaching intervention recommended.',
+      message: '<strong>Alyssa H.</strong> has had 0 sales this week — coaching intervention recommended.',
       time: 'EOD',
     },
     {
       type: 'green',
-      message: '<strong>Jordan R.</strong> hit $10,200 this month — on pace for $120K annual. Ready for Consistent tier promotion.',
+      message: '<strong>Caitlyn R.</strong> hit $9,800 this month — on pace for $117K annual. Great momentum!',
       time: 'Today',
     },
     {
       type: 'amber',
-      message: '<strong>Nia Johnson</strong> (recruit) has been in Training stage for 10 days — check release readiness.',
-      time: 'Recruiting',
+      message: '<strong>Jorge R.</strong> (training) has been in training for 10 days — check release readiness.',
+      time: 'Training',
     },
   ]
-
-  if (alerts.length === 0) return null
 
   return (
     <div>
