@@ -1,44 +1,80 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
-const AGENTS: Record<string, any> = {
-  '1': { name: 'Jonis H.', role: 'Top Producer', tier: 'S Tier', color: '#F59E0B', initials: 'JH', start: 'Jan 2022', manager: 'Enri S.', leads: 'Union + Veteran', ytd: 0, month: 0, sits: 0, close: 0, refs: 0, dials: 0, streak: 0, health: 'green', monthly: [0,0,0,0,0,0,0,0,0,0,0,0], coaching: [] },
-  '2': { name: 'Caitlyn R.', role: 'A Tier Producer', tier: 'A Tier', color: '#00E5A0', initials: 'CR', start: 'Jan 2022', manager: 'Enri S.', leads: 'Union + POS', ytd: 0, month: 0, sits: 0, close: 0, refs: 0, dials: 0, streak: 0, health: 'green', monthly: [0,0,0,0,0,0,0,0,0,0,0,0], coaching: [] },
-  '3': { name: 'Luis K.', role: 'A Tier Producer', tier: 'A Tier', color: '#00E5A0', initials: 'LK', start: 'Jan 2022', manager: 'Enri S.', leads: 'Union', ytd: 0, month: 0, sits: 0, close: 0, refs: 0, dials: 0, streak: 0, health: 'green', monthly: [0,0,0,0,0,0,0,0,0,0,0,0], coaching: [] },
-  '4': { name: 'Rachel N.', role: 'B Tier Producer', tier: 'B Tier', color: '#3B82F6', initials: 'RN', start: 'Jan 2022', manager: 'Enri S.', leads: 'Union', ytd: 0, month: 0, sits: 0, close: 0, refs: 0, dials: 0, streak: 0, health: 'green', monthly: [0,0,0,0,0,0,0,0,0,0,0,0], coaching: [] },
-  '5': { name: 'Ardit M.', role: 'B Tier Producer', tier: 'B Tier', color: '#3B82F6', initials: 'AM', start: 'Jan 2023', manager: 'Enri S.', leads: 'Veteran', ytd: 0, month: 0, sits: 0, close: 0, refs: 0, dials: 0, streak: 0, health: 'green', monthly: [0,0,0,0,0,0,0,0,0,0,0,0], coaching: [] },
-  '6': { name: 'Adrian B.', role: 'B Tier Producer', tier: 'B Tier', color: '#3B82F6', initials: 'AB', start: 'Jan 2023', manager: 'Enri S.', leads: 'Union', ytd: 0, month: 0, sits: 0, close: 0, refs: 0, dials: 0, streak: 0, health: 'yellow', monthly: [0,0,0,0,0,0,0,0,0,0,0,0], coaching: [] },
-  '7': { name: 'Dayell F.', role: 'B Tier Producer', tier: 'B Tier', color: '#3B82F6', initials: 'DF', start: 'Jan 2023', manager: 'Enri S.', leads: 'New Pack', ytd: 0, month: 0, sits: 0, close: 0, refs: 0, dials: 0, streak: 0, health: 'yellow', monthly: [0,0,0,0,0,0,0,0,0,0,0,0], coaching: [] },
-  '8': { name: 'Enkela M.', role: 'C Tier Producer', tier: 'C Tier', color: '#A78BFA', initials: 'EM', start: 'Jan 2023', manager: 'Enri S.', leads: 'Union', ytd: 0, month: 0, sits: 0, close: 0, refs: 0, dials: 0, streak: 0, health: 'yellow', monthly: [0,0,0,0,0,0,0,0,0,0,0,0], coaching: [] },
-  '9': { name: 'Kelsey S.', role: 'C Tier Producer', tier: 'C Tier', color: '#A78BFA', initials: 'KS', start: 'Jan 2023', manager: 'Enri S.', leads: 'New Pack', ytd: 0, month: 0, sits: 0, close: 0, refs: 0, dials: 0, streak: 0, health: 'yellow', monthly: [0,0,0,0,0,0,0,0,0,0,0,0], coaching: [] },
-  '10': { name: 'Edlira S.', role: 'C Tier Producer', tier: 'C Tier', color: '#A78BFA', initials: 'ES', start: 'Jan 2023', manager: 'Enri S.', leads: 'Union', ytd: 0, month: 0, sits: 0, close: 0, refs: 0, dials: 0, streak: 0, health: 'yellow', monthly: [0,0,0,0,0,0,0,0,0,0,0,0], coaching: [] },
-  '11': { name: 'Matthew H.', role: 'C Tier Producer', tier: 'C Tier', color: '#A78BFA', initials: 'MH', start: 'Jan 2023', manager: 'Enri S.', leads: 'New Pack', ytd: 0, month: 0, sits: 0, close: 0, refs: 0, dials: 0, streak: 0, health: 'yellow', monthly: [0,0,0,0,0,0,0,0,0,0,0,0], coaching: [] },
-  '12': { name: 'Drew C.', role: 'C Tier Producer', tier: 'C Tier', color: '#A78BFA', initials: 'DC', start: 'Jan 2023', manager: 'Enri S.', leads: 'New Pack', ytd: 0, month: 0, sits: 0, close: 0, refs: 0, dials: 0, streak: 0, health: 'yellow', monthly: [0,0,0,0,0,0,0,0,0,0,0,0], coaching: [] },
-  '13': { name: 'Nadirah M.', role: 'C Tier Producer', tier: 'C Tier', color: '#A78BFA', initials: 'NM', start: 'Jan 2023', manager: 'Enri S.', leads: 'New Pack', ytd: 0, month: 0, sits: 0, close: 0, refs: 0, dials: 0, streak: 0, health: 'yellow', monthly: [0,0,0,0,0,0,0,0,0,0,0,0], coaching: [] },
-  '14': { name: 'Tiffany S.', role: 'C Tier Producer', tier: 'C Tier', color: '#A78BFA', initials: 'TS', start: 'Jan 2023', manager: 'Enri S.', leads: 'New Pack', ytd: 0, month: 0, sits: 0, close: 0, refs: 0, dials: 0, streak: 0, health: 'yellow', monthly: [0,0,0,0,0,0,0,0,0,0,0,0], coaching: [] },
-  '15': { name: 'Jorge R.', role: 'In Training', tier: 'T Tier', color: '#F97316', initials: 'JR', start: 'Jan 2024', manager: 'Enri S.', leads: 'New Pack', ytd: 0, month: 0, sits: 0, close: 0, refs: 0, dials: 0, streak: 0, health: 'yellow', monthly: [0,0,0,0,0,0,0,0,0,0,0,0], coaching: [] },
-  '16': { name: 'Alyssa H.', role: 'In Training', tier: 'T Tier', color: '#F97316', initials: 'AH', start: 'Jan 2024', manager: 'Enri S.', leads: 'New Pack', ytd: 0, month: 0, sits: 0, close: 0, refs: 0, dials: 0, streak: 0, health: 'yellow', monthly: [0,0,0,0,0,0,0,0,0,0,0,0], coaching: [] },
-  '17': { name: 'Llambi T.', role: 'Inactive', tier: 'I Tier', color: '#EF4444', initials: 'LT', start: 'Jan 2023', manager: 'Enri S.', leads: 'N/A', ytd: 0, month: 0, sits: 0, close: 0, refs: 0, dials: 0, streak: 0, health: 'red', monthly: [0,0,0,0,0,0,0,0,0,0,0,0], coaching: [] },
-  '18': { name: 'Endi A.', role: 'Inactive', tier: 'I Tier', color: '#EF4444', initials: 'EA', start: 'Jan 2023', manager: 'Enri S.', leads: 'N/A', ytd: 0, month: 0, sits: 0, close: 0, refs: 0, dials: 0, streak: 0, health: 'red', monthly: [0,0,0,0,0,0,0,0,0,0,0,0], coaching: [] },
-  '19': { name: 'Klaudiana V.', role: 'Inactive', tier: 'I Tier', color: '#EF4444', initials: 'KV', start: 'Jan 2023', manager: 'Enri S.', leads: 'N/A', ytd: 0, month: 0, sits: 0, close: 0, refs: 0, dials: 0, streak: 0, health: 'red', monthly: [0,0,0,0,0,0,0,0,0,0,0,0], coaching: [] },
-  '20': { name: 'Enri S.', role: 'Agency Owner · A Tier', tier: 'A Tier', color: '#00E5A0', initials: 'ES', start: 'Jan 2020', manager: 'AO Globe Life', leads: 'Union + Veteran', ytd: 0, month: 0, sits: 0, close: 0, refs: 0, dials: 0, streak: 0, health: 'green', monthly: [0,0,0,0,0,0,0,0,0,0,0,0], coaching: [] },
+const AGENT_NAMES: Record<string, any> = {
+  '1': { name: 'Jonis H.', role: 'Top Producer', tier: 'S Tier', color: '#F59E0B', initials: 'JH', start: 'Jan 2022', manager: 'Enri S.' },
+  '2': { name: 'Caitlyn R.', role: 'A Tier Producer', tier: 'A Tier', color: '#00E5A0', initials: 'CR', start: 'Jan 2022', manager: 'Enri S.' },
+  '3': { name: 'Luis K.', role: 'A Tier Producer', tier: 'A Tier', color: '#00E5A0', initials: 'LK', start: 'Jan 2022', manager: 'Enri S.' },
+  '4': { name: 'Rachel N.', role: 'B Tier Producer', tier: 'B Tier', color: '#3B82F6', initials: 'RN', start: 'Jan 2022', manager: 'Enri S.' },
+  '5': { name: 'Ardit M.', role: 'B Tier Producer', tier: 'B Tier', color: '#3B82F6', initials: 'AM', start: 'Jan 2023', manager: 'Enri S.' },
+  '6': { name: 'Adrian B.', role: 'B Tier Producer', tier: 'B Tier', color: '#3B82F6', initials: 'AB', start: 'Jan 2023', manager: 'Enri S.' },
+  '7': { name: 'Dayell F.', role: 'B Tier Producer', tier: 'B Tier', color: '#3B82F6', initials: 'DF', start: 'Jan 2023', manager: 'Enri S.' },
+  '8': { name: 'Enkela M.', role: 'C Tier Producer', tier: 'C Tier', color: '#A78BFA', initials: 'EM', start: 'Jan 2023', manager: 'Enri S.' },
+  '9': { name: 'Kelsey S.', role: 'C Tier Producer', tier: 'C Tier', color: '#A78BFA', initials: 'KS', start: 'Jan 2023', manager: 'Enri S.' },
+  '10': { name: 'Edlira S.', role: 'C Tier Producer', tier: 'C Tier', color: '#A78BFA', initials: 'ES', start: 'Jan 2023', manager: 'Enri S.' },
+  '11': { name: 'Matthew H.', role: 'C Tier Producer', tier: 'C Tier', color: '#A78BFA', initials: 'MH', start: 'Jan 2023', manager: 'Enri S.' },
+  '12': { name: 'Drew C.', role: 'C Tier Producer', tier: 'C Tier', color: '#A78BFA', initials: 'DC', start: 'Jan 2023', manager: 'Enri S.' },
+  '13': { name: 'Nadirah M.', role: 'C Tier Producer', tier: 'C Tier', color: '#A78BFA', initials: 'NM', start: 'Jan 2023', manager: 'Enri S.' },
+  '14': { name: 'Tiffany S.', role: 'C Tier Producer', tier: 'C Tier', color: '#A78BFA', initials: 'TS', start: 'Jan 2023', manager: 'Enri S.' },
+  '15': { name: 'Jorge R.', role: 'In Training', tier: 'T Tier', color: '#F97316', initials: 'JR', start: 'Jan 2024', manager: 'Enri S.' },
+  '16': { name: 'Alyssa H.', role: 'In Training', tier: 'T Tier', color: '#F97316', initials: 'AH', start: 'Jan 2024', manager: 'Enri S.' },
+  '17': { name: 'Llambi T.', role: 'Inactive', tier: 'I Tier', color: '#EF4444', initials: 'LT', start: 'Jan 2023', manager: 'Enri S.' },
+  '18': { name: 'Endi A.', role: 'Inactive', tier: 'I Tier', color: '#EF4444', initials: 'EA', start: 'Jan 2023', manager: 'Enri S.' },
+  '19': { name: 'Klaudiana V.', role: 'Inactive', tier: 'I Tier', color: '#EF4444', initials: 'KV', start: 'Jan 2023', manager: 'Enri S.' },
+  '20': { name: 'Enri S.', role: 'Agency Owner · A Tier', tier: 'A Tier', color: '#00E5A0', initials: 'ES', start: 'Jan 2020', manager: 'AO Globe Life' },
 }
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
 const TIERS = ['S Tier', 'A Tier', 'B Tier', 'C Tier', 'T Tier', 'I Tier']
 const LEAD_TYPES = ['Union', 'Veteran', 'POS', 'Union + Veteran', 'Union + POS', 'Union + POS + Veteran', 'New Pack', 'N/A']
 
+const DEFAULT_STATS = {
+  ytd: 0, month: 0, close: 0, sits: 0, dials: 0,
+  refs: 0, streak: 0, health: 'yellow', leads: 'New Pack',
+  monthly: [0,0,0,0,0,0,0,0,0,0,0,0],
+  coaching: [],
+}
+
 export default function AgentProfilePage({ params }: { params: { id: string } }) {
-  const baseAgent = AGENTS[params.id]
-  const [agent, setAgent] = useState(baseAgent)
+  const base = AGENT_NAMES[params.id]
+  const [stats, setStats] = useState(DEFAULT_STATS)
   const [activeTab, setActiveTab] = useState('overview')
   const [editing, setEditing] = useState(false)
-  const [editForm, setEditForm] = useState(baseAgent)
+  const [editForm, setEditForm] = useState(DEFAULT_STATS)
   const [saving, setSaving] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [coachingNote, setCoachingNote] = useState('')
-  const [notes, setNotes] = useState<string[]>(baseAgent?.coaching || [])
+  const [savedMessage, setSavedMessage] = useState('')
 
-  if (!agent) return (
+  useEffect(() => {
+    async function loadAgent() {
+      try {
+        const res = await fetch(`/api/agents?id=${params.id}`)
+        const { data } = await res.json()
+        if (data) {
+          const loaded = {
+            ytd: data.ytd_alp || 0,
+            month: data.month_alp || 0,
+            close: data.close_rate || 0,
+            sits: data.avg_daily_sits || 0,
+            dials: data.avg_daily_dials || 0,
+            refs: data.refs_per_sale || 0,
+            streak: data.streak_days || 0,
+            health: data.health_status || 'yellow',
+            leads: data.lead_types_text || 'New Pack',
+            monthly: data.monthly_alp || [0,0,0,0,0,0,0,0,0,0,0,0],
+            coaching: data.coaching_notes || [],
+          }
+          setStats(loaded)
+          setEditForm(loaded)
+        }
+      } catch (e) {}
+      setLoading(false)
+    }
+    loadAgent()
+  }, [params.id])
+
+  if (!base) return (
     <div style={{ padding: '40px', textAlign: 'center', color: '#7A90A8', fontFamily: 'system-ui' }}>
       Agent not found. <a href="/dashboard/team" style={{ color: '#00E5A0' }}>Back to Team</a>
     </div>
@@ -50,20 +86,55 @@ export default function AgentProfilePage({ params }: { params: { id: string } })
 
   async function handleSave() {
     setSaving(true)
-    await new Promise(r => setTimeout(r, 600))
-    setAgent(editForm)
-    setEditing(false)
+    try {
+      const res = await fetch('/api/agents', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: params.id,
+          ytd_alp: editForm.ytd,
+          month_alp: editForm.month,
+          close_rate: editForm.close,
+          avg_daily_sits: editForm.sits,
+          avg_daily_dials: editForm.dials,
+          refs_per_sale: editForm.refs,
+          streak_days: editForm.streak,
+          health_status: editForm.health,
+          lead_types_text: editForm.leads,
+          monthly_alp: editForm.monthly,
+          coaching_notes: editForm.coaching,
+        }),
+      })
+      const { data, error } = await res.json()
+      if (error) throw new Error(error)
+      setStats(editForm)
+      setEditing(false)
+      setSavedMessage('✓ Saved successfully!')
+      setTimeout(() => setSavedMessage(''), 3000)
+    } catch (e: any) {
+      setSavedMessage('Error saving — please try again')
+    }
     setSaving(false)
   }
 
-  function handleAddNote() {
+  async function handleAddNote() {
     if (!coachingNote.trim()) return
     const date = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
     const newNote = `${date} — ${coachingNote}`
-    setNotes(prev => [newNote, ...prev])
-    setCoachingNote('')
+    const updatedNotes = [newNote, ...stats.coaching]
+    
+    try {
+      await fetch('/api/agents', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: params.id, coaching_notes: updatedNotes }),
+      })
+      setStats(prev => ({ ...prev, coaching: updatedNotes }))
+      setCoachingNote('')
+    } catch (e) {}
   }
 
+  const agent = { ...base, ...stats }
   const healthColor = agent.health === 'green' ? '#00E5A0' : agent.health === 'yellow' ? '#F59E0B' : '#EF4444'
   const maxMonthly = Math.max(...agent.monthly.filter((v: number) => v > 0), 1)
 
@@ -77,12 +148,24 @@ export default function AgentProfilePage({ params }: { params: { id: string } })
     textTransform: 'uppercase' as const, letterSpacing: '1px', marginBottom: '4px',
   }
 
+  if (loading) return (
+    <div style={{ padding: '40px', textAlign: 'center', color: '#7A90A8', fontFamily: 'system-ui' }}>
+      Loading agent data...
+    </div>
+  )
+
   return (
     <div style={{ fontFamily: 'system-ui, sans-serif', color: '#ECF0F5' }}>
 
       <a href="/dashboard/team" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#7A90A8', textDecoration: 'none', fontSize: '12px', marginBottom: '16px' }}>
         ← Back to Team
       </a>
+
+      {savedMessage && (
+        <div style={{ background: savedMessage.includes('Error') ? 'rgba(239,68,68,0.1)' : 'rgba(0,229,160,0.1)', border: `1px solid ${savedMessage.includes('Error') ? 'rgba(239,68,68,0.2)' : 'rgba(0,229,160,0.2)'}`, borderRadius: '8px', padding: '10px 14px', marginBottom: '12px', fontSize: '12px', color: savedMessage.includes('Error') ? '#EF4444' : '#00E5A0' }}>
+          {savedMessage}
+        </div>
+      )}
 
       {/* Hero */}
       <div style={{ background: '#0C1018', border: '1px solid #1C2A3A', borderRadius: '12px', overflow: 'hidden', marginBottom: '16px' }}>
@@ -105,7 +188,7 @@ export default function AgentProfilePage({ params }: { params: { id: string } })
               </div>
             </div>
             <button
-              onClick={() => { setEditing(!editing); setEditForm(agent) }}
+              onClick={() => { setEditing(!editing); setEditForm(stats) }}
               style={{ background: editing ? '#111820' : '#00E5A0', color: editing ? '#7A90A8' : '#000', border: editing ? '1px solid #1C2A3A' : 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}
             >
               {editing ? 'Cancel' : '✏️ Edit'}
@@ -113,7 +196,6 @@ export default function AgentProfilePage({ params }: { params: { id: string } })
           </div>
         </div>
 
-        {/* Stats row */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1px', background: '#1C2A3A' }}>
           {[
             { label: 'YTD ALP', value: agent.ytd > 0 ? `$${(agent.ytd/1000).toFixed(0)}K` : '—', color: '#00E5A0' },
@@ -174,9 +256,11 @@ export default function AgentProfilePage({ params }: { params: { id: string } })
             </div>
             <div>
               <label style={labelStyle}>Tier</label>
-              <select style={inputStyle} value={editForm.tier}
-                onChange={e => handleEditChange('tier', e.target.value)}>
-                {TIERS.map(t => <option key={t} value={t}>{t}</option>)}
+              <select style={inputStyle} value={editForm.health}
+                onChange={e => handleEditChange('health', e.target.value)}>
+                <option value="green">Healthy</option>
+                <option value="yellow">Watch</option>
+                <option value="red">Needs Help</option>
               </select>
             </div>
             <div>
@@ -198,7 +282,7 @@ export default function AgentProfilePage({ params }: { params: { id: string } })
           </div>
 
           <div style={{ marginBottom: '12px' }}>
-            <label style={labelStyle}>Monthly ALP (Jan–Dec, comma separated)</label>
+            <label style={labelStyle}>Monthly ALP — Jan through Dec (comma separated)</label>
             <input type="text" style={inputStyle}
               value={editForm.monthly.join(',')}
               onChange={e => {
@@ -208,15 +292,12 @@ export default function AgentProfilePage({ params }: { params: { id: string } })
               }}
               placeholder="5000,6000,7000,8000,9000,10000,0,0,0,0,0,0"
             />
-            <div style={{ fontSize: '10px', color: '#3D5068', marginTop: '4px' }}>Enter 12 numbers separated by commas (Jan through Dec). Use 0 for months not yet completed.</div>
+            <div style={{ fontSize: '10px', color: '#3D5068', marginTop: '4px' }}>12 numbers separated by commas. Use 0 for months not yet completed.</div>
           </div>
 
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            style={{ background: '#00E5A0', color: '#000', border: 'none', borderRadius: '8px', padding: '10px 24px', fontSize: '12px', fontWeight: '700', cursor: 'pointer', width: '100%' }}
-          >
-            {saving ? 'Saving...' : '✓ Save Changes'}
+          <button onClick={handleSave} disabled={saving}
+            style={{ background: '#00E5A0', color: '#000', border: 'none', borderRadius: '8px', padding: '10px 24px', fontSize: '12px', fontWeight: '700', cursor: 'pointer', width: '100%' }}>
+            {saving ? 'Saving to database...' : '✓ Save Changes'}
           </button>
         </div>
       )}
@@ -306,22 +387,16 @@ export default function AgentProfilePage({ params }: { params: { id: string } })
 
           <div style={{ marginBottom: '16px', padding: '12px', background: '#111820', borderRadius: '8px', border: '1px solid #1C2A3A' }}>
             <div style={{ fontSize: '10px', color: '#3D5068', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>Add Coaching Note</div>
-            <textarea
-              rows={3}
-              value={coachingNote}
-              onChange={e => setCoachingNote(e.target.value)}
+            <textarea rows={3} value={coachingNote} onChange={e => setCoachingNote(e.target.value)}
               placeholder="Enter coaching notes, action items, follow-ups..."
-              style={{ width: '100%', background: '#0C1018', border: '1px solid #1C2A3A', borderRadius: '6px', padding: '8px', color: '#ECF0F5', fontSize: '12px', resize: 'none', outline: 'none', boxSizing: 'border-box' }}
-            />
-            <button
-              onClick={handleAddNote}
-              style={{ marginTop: '8px', background: '#00E5A0', color: '#000', border: 'none', borderRadius: '6px', padding: '8px 16px', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}
-            >
+              style={{ width: '100%', background: '#0C1018', border: '1px solid #1C2A3A', borderRadius: '6px', padding: '8px', color: '#ECF0F5', fontSize: '12px', resize: 'none', outline: 'none', boxSizing: 'border-box' }} />
+            <button onClick={handleAddNote}
+              style={{ marginTop: '8px', background: '#00E5A0', color: '#000', border: 'none', borderRadius: '6px', padding: '8px 16px', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}>
               Save Note
             </button>
           </div>
 
-          {notes.length > 0 ? notes.map((note: string, i: number) => (
+          {stats.coaching.length > 0 ? stats.coaching.map((note: string, i: number) => (
             <div key={i} style={{ padding: '12px', background: '#111820', borderRadius: '8px', marginBottom: '8px', fontSize: '12px', color: '#7A90A8', lineHeight: '1.6' }}>
               {note}
             </div>
