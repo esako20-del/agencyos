@@ -52,8 +52,9 @@ export default function AgentProfilePage({ params }: { params: { id: string } })
 
   useEffect(() => {
     async function loadAgent() {
+      if (!base) { setLoading(false); return }
       try {
-        const res = await fetch(`/api/agents?id=${params.id}`)
+        const res = await fetch(`/api/agents?name=${encodeURIComponent(base.name)}`)
         const { data } = await res.json()
         if (data) {
           const loaded = {
@@ -95,7 +96,7 @@ export default function AgentProfilePage({ params }: { params: { id: string } })
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          id: params.id,
+          name: base.name,
           ytd_alp: editForm.ytd,
           month_alp: editForm.month,
           close_rate: editForm.close,
@@ -109,7 +110,7 @@ export default function AgentProfilePage({ params }: { params: { id: string } })
           coaching_notes: editForm.coaching,
         }),
       })
-      const { data, error } = await res.json()
+      const { error } = await res.json()
       if (error) throw new Error(error)
       setStats(editForm)
       setEditing(false)
@@ -126,12 +127,11 @@ export default function AgentProfilePage({ params }: { params: { id: string } })
     const date = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
     const newNote = `${date} — ${coachingNote}`
     const updatedNotes = [newNote, ...stats.coaching]
-    
     try {
       await fetch('/api/agents', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: params.id, coaching_notes: updatedNotes }),
+        body: JSON.stringify({ name: base.name, coaching_notes: updatedNotes }),
       })
       setStats(prev => ({ ...prev, coaching: updatedNotes }))
       setCoachingNote('')
@@ -257,15 +257,6 @@ export default function AgentProfilePage({ params }: { params: { id: string } })
               <label style={labelStyle}>Day Streak</label>
               <input type="number" style={inputStyle} value={editForm.streak}
                 onChange={e => handleEditChange('streak', parseInt(e.target.value) || 0)} />
-            </div>
-            <div>
-              <label style={labelStyle}>Tier</label>
-              <select style={inputStyle} value={editForm.health}
-                onChange={e => handleEditChange('health', e.target.value)}>
-                <option value="green">Healthy</option>
-                <option value="yellow">Watch</option>
-                <option value="red">Needs Help</option>
-              </select>
             </div>
             <div>
               <label style={labelStyle}>Lead Types</label>
