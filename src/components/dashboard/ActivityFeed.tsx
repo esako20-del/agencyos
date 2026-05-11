@@ -1,5 +1,5 @@
+'use client'
 import { formatCurrency } from '@/lib/utils'
-import { DailyReport } from '@/types'
 
 function StatBox({ label, value, color = 'text-accent-green' }: { label: string; value: string | number; color?: string }) {
   return (
@@ -58,16 +58,16 @@ export function TodayActivity({ totals }: { totals: any }) {
 export default TodayActivity
 
 const FEED_ITEMS = [
-  { color: 'bg-accent-green', text: '<strong>Marcus W.</strong> submitted daily report — 3 sales, $2,800 ALP', time: '8:41 PM' },
-  { color: 'bg-accent-green', text: '<strong>Jordan R.</strong> submitted daily report — 2 sales, $1,800 ALP', time: '8:38 PM' },
-  { color: 'bg-accent-red', text: 'Automated SMS sent to <strong>4 agents</strong> for missing reports', time: '8:00 PM' },
-  { color: 'bg-accent-blue2', text: '<strong>DeShawn T.</strong> submitted daily report — 2 sales, $1,900 ALP', time: '7:52 PM' },
-  { color: 'bg-accent-amber', text: '<strong>Nia Johnson</strong> (recruit) completed Week 2 training checklist', time: '5:30 PM' },
-  { color: 'bg-accent-green', text: '<strong>Priya S.</strong> submitted daily report — 1 sale, $1,100 ALP', time: '5:12 PM' },
+  { color: 'bg-accent-green', text: '<strong>Jonis H.</strong> submitted daily report — 3 sales, $2,800 ALP', time: '8:41 PM' },
+  { color: 'bg-accent-green', text: '<strong>Caitlyn R.</strong> submitted daily report — 2 sales, $1,800 ALP', time: '8:38 PM' },
+  { color: 'bg-accent-red', text: 'Automated SMS sent to agents with missing reports', time: '8:00 PM' },
+  { color: 'bg-accent-blue2', text: '<strong>Luis K.</strong> submitted daily report — 2 sales, $1,900 ALP', time: '7:52 PM' },
+  { color: 'bg-accent-amber', text: '<strong>Jorge R.</strong> (training) completed Week 2 training checklist', time: '5:30 PM' },
+  { color: 'bg-accent-green', text: '<strong>Rachel N.</strong> submitted daily report — 1 sale, $1,100 ALP', time: '5:12 PM' },
   { color: 'bg-accent-amber', text: 'Goal alert: Team ALP at 74% of monthly goal with 8 days remaining', time: '12:00 PM' },
 ]
 
-export function ActivityFeed({ reports }: { reports: DailyReport[] }) {
+export function ActivityFeed({ reports }: { reports: any[] }) {
   return (
     <div className="panel">
       <div className="panel-head">
