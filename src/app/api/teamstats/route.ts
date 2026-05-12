@@ -22,9 +22,9 @@ function getDateRanges() {
 
   const weekId = weekStartStr
   const monthId = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
-  const yearId = `${now.getFullYear()}`
+  const currentYear = now.getFullYear()
 
-  return { yesterdayStr, weekStartStr, monthStartStr, yearStartStr, weekId, monthId, yearId }
+  return { yesterdayStr, weekStartStr, monthStartStr, yearStartStr, weekId, monthId, currentYear }
 }
 
 function sumAnalytics(entries: any[]) {
@@ -70,10 +70,11 @@ function calcFromReports(reports: any[]) {
 }
 
 function mergeStats(fromReports: any, fromAnalytics: any) {
-  // Combine both sources — add them together
+  const totalAlp = (fromReports.alp || 0) + (fromAnalytics?.alp || 0)
+  const totalRefAlp = (fromReports.refAlp || 0) + (fromAnalytics?.refAlp || 0)
   return {
-    alp: (fromReports.alp || 0) + (fromAnalytics?.alp || 0),
-    refAlp: (fromReports.refAlp || 0) + (fromAnalytics?.refAlp || 0),
+    alp: totalAlp,
+    refAlp: totalRefAlp,
     showRatio: fromReports.showRatio || fromAnalytics?.showRatio || 0,
     closeRatio: fromReports.closeRatio || fromAnalytics?.closeRatio || 0,
     refShowRatio: fromReports.refShowRatio || fromAnalytics?.refShowRatio || 0,
@@ -82,7 +83,7 @@ function mergeStats(fromReports: any, fromAnalytics: any) {
 }
 
 export async function GET() {
-  const { yesterdayStr, weekStartStr, monthStartStr, yearStartStr, weekId, monthId } = getDateRanges()
+  const { yesterdayStr, weekStartStr, monthStartStr, yearStartStr, weekId, monthId, currentYear } = getDateRanges()
 
   // Get all daily reports for the year
   const { data: allReports } = await supabaseAdmin
@@ -98,35 +99,74 @@ export async function GET() {
   const reports = allReports || []
   const analytics = analyticsData || []
 
-  // Reports by period
+  // Split reports by period
   const yesterdayReports = reports.filter(r => r.report_date === yesterdayStr)
   const weekReports = reports.filter(r => r.report_date >= weekStartStr)
   const monthReports = reports.filter(r => r.report_date >= monthStartStr)
   const ytdReports = reports
 
-  // Analytics by period — sum up all weekly entries that fall in the month
-  const yesterdayAnalytics = analytics.find(a => a.period_type === 'daily' && a.period_id === yesterdayStr)
-  const weekAnalytics = analytics.find(a => a.period_type === 'weekly' && a.period_id === weekId)
+  // Yesterday analytics
+  const yesterdayAnalytics = analytics.find(a =>
+    a.period_type === 'daily' && a.period_id === yesterdayStr
+  )
 
-  // For month — sum all weekly entries that start in this month + monthly entry
+  // This week analytics
+  const weekAnalytics = analytics.find(a =>
+    a.period_type === 'weekly' && a.period_id === weekId
+  )
+
+  // This month analytics — weekly entries in this month + monthly entry
   const monthWeeklyAnalytics = analytics.filter(a =>
     a.period_type === 'weekly' && a.period_id >= monthStartStr
   )
-  const monthAnalyticsEntry = analytics.find(a => a.period_type === 'monthly' && a.period_id === monthId)
+  const monthAnalyticsEntry = analytics.find(a =>
+    a.period_type === 'monthly' && a.period_id === monthId
+  )
   const monthAnalyticsCombined = calcRatios(sumAnalytics([
     ...monthWeeklyAnalytics,
-    ...(monthAnalyticsEntry ? [{ ...monthAnalyticsEntry, ref_alp: monthAnalyticsEntry.ref_alp }] : [])
+    ...(monthAnalyticsEntry ? [monthAnalyticsEntry] : [])
   ]))
 
-  // For YTD — sum all analytics entries
-  const ytdAnalytics = calcRatios(sumAnalytics(analytics))
+  // YTD analytics — ALL monthly entries for current year + ALL weekly entries + ALL daily entries
+  const ytdMonthlyAnalytics = analytics.filter(a =>
+    a.period_type === 'monthly' && a.period_id.startsWith(`${currentYear}-`)
+  )
+  const ytdWeeklyAnalytics = analytics.filter(a =>
+    a.period_type === 'weekly' && a.period_id >= `${currentYear}-01-01`
+  )
+  const ytdDailyAnalytics = analytics.filter(a =>
+    a.period_type === 'daily' && a.period_id >= `${currentYear}-01-01`
+  )
+
+  // For YTD we need to avoid double counting — prefer monthly over weekly over daily
+  // Use monthly entries for past months, weekly for current month, daily for current week
+  const pastMonths = ytdMonthlyAnalytics.filter(a => a.period_id !== monthId)
+  const currentMonthWeekly = ytdWeeklyAnalytics.filter(a => a.period_id >= monthStartStr)
+
+  const ytdAnalyticsCombined = calcRatios(sumAnalytics([
+    ...pastMonths,
+    ...currentMonthWeekly,
+    ...(weekAnalytics && !currentMonthWeekly.find((a: any) => a.period_id === weekId) ? [weekAnalytics] : []),
+  ]))
 
   return NextResponse.json({
     data: {
-      yesterday: mergeStats(calcFromReports(yesterdayReports), yesterdayAnalytics ? calcRatios(sumAnalytics([yesterdayAnalytics])) : null),
-      thisWeek: mergeStats(calcFromReports(weekReports), weekAnalytics ? calcRatios(sumAnalytics([weekAnalytics])) : null),
-      thisMonth: mergeStats(calcFromReports(monthReports), monthAnalyticsCombined),
-      ytd: mergeStats(calcFromReports(ytdReports), ytdAnalytics),
+      yesterday: mergeStats(
+        calcFromReports(yesterdayReports),
+        yesterdayAnalytics ? calcRatios(sumAnalytics([yesterdayAnalytics])) : null
+      ),
+      thisWeek: mergeStats(
+        calcFromReports(weekReports),
+        weekAnalytics ? calcRatios(sumAnalytics([weekAnalytics])) : null
+      ),
+      thisMonth: mergeStats(
+        calcFromReports(monthReports),
+        monthAnalyticsCombined
+      ),
+      ytd: mergeStats(
+        calcFromReports(ytdReports),
+        ytdAnalyticsCombined
+      ),
     }
   })
 }
