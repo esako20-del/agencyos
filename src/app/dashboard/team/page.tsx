@@ -29,11 +29,11 @@ const TIER_DESC: Record<string, string> = {
 }
 
 const AGENT_IDS: Record<string, string> = {
-  'Jonis H.': '1', 'Caitlyn R.': '2', 'Luis K.': '3', 'Rachel N.': '4',
-  'Ardit M.': '5', 'Adrian B.': '6', 'Dayell F.': '7', 'Enkela M.': '8',
+  'Jonis H.': '1', 'Caitlyn R.': '2', 'Luis K.': '3',
+  'Ardit M.': '5', 'Adrian B.': '6', 'Dayell F.': '7',
   'Kelsey S.': '9', 'Edlira S.': '10', 'Matthew H.': '11', 'Drew C.': '12',
   'Nadirah M.': '13', 'Tiffany S.': '14', 'Jorge R.': '15', 'Alyssa H.': '16',
-  'Llambi T.': '17', 'Endi A.': '18', 'Klaudiana V.': '19', 'Enri S.': '20','Bruno N.': '21',
+  'Llambi T.': '17', 'Endi A.': '18', 'Enri S.': '20','Bruno N.': '21',
 }
 
 const TABS = [
