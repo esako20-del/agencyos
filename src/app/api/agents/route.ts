@@ -30,6 +30,7 @@ export async function GET(req: NextRequest) {
   const { data, error } = await supabaseAdmin
     .from('agents')
     .select('*')
+    .eq('is_active', true)
     .order('full_name')
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
   return NextResponse.json({ data })
