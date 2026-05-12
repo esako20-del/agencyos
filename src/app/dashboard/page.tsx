@@ -40,10 +40,6 @@ export default function DashboardPage() {
   return (
     <div style={{ fontFamily: 'system-ui, sans-serif', color: '#ECF0F5' }}>
 
-      {/* Live Alerts */}
-      <AlertsPanel missingReports={[]} />
-
-      <div style={{ height: '14px' }} />
 
       {/* ALP Sections */}
       <StatSection
@@ -89,7 +85,12 @@ export default function DashboardPage() {
           { label: 'YTD', value: '—', sub: 'Ref Show / Close' },
         ]}
       />
+      
+{/* Live Alerts */}
+      <AlertsPanel missingReports={[]} />
 
+      <div style={{ height: '14px' }} />
+      
       {/* Leaderboard + Activity Feed */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.6fr', gap: '14px' }}>
         <LeaderboardPanel entries={[]} />
