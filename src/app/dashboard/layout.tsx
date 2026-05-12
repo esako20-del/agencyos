@@ -9,6 +9,7 @@ const navItems = [
   { href: '/dashboard/recruiting', label: 'Recruiting', icon: '◉' },
   { href: '/dashboard/leads', label: 'Leads', icon: '◇' },
   { href: '/dashboard/training', label: 'Training', icon: '△' },
+  { href: '/dashboard/analytics', label: 'Analytics', icon: '◫' },
   { href: '/dashboard/insights', label: 'AI Insights', icon: '✦' },
   { href: '/dashboard/goals', label: 'Goals', icon: '◐' },
   { href: '/dashboard/report', label: 'Daily Report', icon: '▷' },
