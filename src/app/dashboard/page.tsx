@@ -1,15 +1,16 @@
+'use client'
+import { useEffect, useState } from 'react'
 import LeaderboardPanel from '@/components/dashboard/LeaderboardPanel'
 import AlertsPanel from '@/components/dashboard/AlertsPanel'
 import { ActivityFeed } from '@/components/dashboard/ActivityFeed'
 
-async function getTeamStats() {
-  try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'https://agencyos-silk-pi.vercel.app'}/api/teamstats`, { cache: 'no-store' })
-    const { data } = await res.json()
-    return data
-  } catch (e) {
-    return null
+function fmt(val: number, type: 'alp' | 'ratio') {
+  if (type === 'alp') {
+    if (val === 0) return '$0'
+    if (val >= 1000) return `$${(val / 1000).toFixed(1)}K`
+    return `$${val}`
   }
+  return val > 0 ? `${val}%` : '—'
 }
 
 function StatSection({ title, color, stats }: {
@@ -37,60 +38,82 @@ function StatSection({ title, color, stats }: {
 }
 
 export default function DashboardPage() {
+  const [stats, setStats] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const res = await fetch('/api/teamstats')
+        const { data } = await res.json()
+        setStats(data)
+      } catch (e) {}
+      setLoading(false)
+    }
+    load()
+  }, [])
+
+  const y = stats?.yesterday
+  const w = stats?.thisWeek
+  const m = stats?.thisMonth
+  const ytd = stats?.ytd
+
   return (
     <div style={{ fontFamily: 'system-ui, sans-serif', color: '#ECF0F5' }}>
 
-
-      {/* ALP Sections */}
+      {/* Team ALP */}
       <StatSection
         title="Team ALP Production"
         color="#00E5A0"
         stats={[
-          { label: 'Yesterday', value: '$0', sub: 'Submit reports to track' },
-          { label: 'This Week', value: '$0', sub: 'Mon – today' },
-          { label: 'This Month', value: '$0', sub: 'MTD' },
-          { label: 'YTD', value: '$0', sub: 'Jan – today' },
+          { label: 'Yesterday', value: loading ? '...' : fmt(y?.alp || 0, 'alp'), sub: 'Prior day' },
+          { label: 'This Week', value: loading ? '...' : fmt(w?.alp || 0, 'alp'), sub: 'Mon – today' },
+          { label: 'This Month', value: loading ? '...' : fmt(m?.alp || 0, 'alp'), sub: 'MTD' },
+          { label: 'YTD', value: loading ? '...' : fmt(ytd?.alp || 0, 'alp'), sub: 'Jan – today' },
         ]}
       />
 
+      {/* Referral ALP */}
       <StatSection
         title="Team Referral ALP"
         color="#A78BFA"
         stats={[
-          { label: 'Yesterday', value: '$0', sub: 'Referral ALP' },
-          { label: 'This Week', value: '$0', sub: 'Mon – today' },
-          { label: 'This Month', value: '$0', sub: 'MTD' },
-          { label: 'YTD', value: '$0', sub: 'Jan – today' },
+          { label: 'Yesterday', value: loading ? '...' : fmt(y?.refAlp || 0, 'alp'), sub: 'Referral ALP' },
+          { label: 'This Week', value: loading ? '...' : fmt(w?.refAlp || 0, 'alp'), sub: 'Mon – today' },
+          { label: 'This Month', value: loading ? '...' : fmt(m?.refAlp || 0, 'alp'), sub: 'MTD' },
+          { label: 'YTD', value: loading ? '...' : fmt(ytd?.refAlp || 0, 'alp'), sub: 'Jan – today' },
         ]}
       />
 
+      {/* Show & Close Ratio */}
       <StatSection
         title="Show Ratio & Close Ratio"
         color="#3B82F6"
         stats={[
-          { label: 'Yesterday', value: '—', sub: 'Show / Close' },
-          { label: 'This Week', value: '—', sub: 'Show / Close' },
-          { label: 'This Month', value: '—', sub: 'Show / Close' },
-          { label: 'YTD', value: '—', sub: 'Show / Close' },
+          { label: 'Yesterday', value: loading ? '...' : `${fmt(y?.showRatio || 0, 'ratio')} / ${fmt(y?.closeRatio || 0, 'ratio')}`, sub: 'Show / Close' },
+          { label: 'This Week', value: loading ? '...' : `${fmt(w?.showRatio || 0, 'ratio')} / ${fmt(w?.closeRatio || 0, 'ratio')}`, sub: 'Show / Close' },
+          { label: 'This Month', value: loading ? '...' : `${fmt(m?.showRatio || 0, 'ratio')} / ${fmt(m?.closeRatio || 0, 'ratio')}`, sub: 'Show / Close' },
+          { label: 'YTD', value: loading ? '...' : `${fmt(ytd?.showRatio || 0, 'ratio')} / ${fmt(ytd?.closeRatio || 0, 'ratio')}`, sub: 'Show / Close' },
         ]}
       />
 
+      {/* Referral Show & Close Ratio */}
       <StatSection
         title="Referral Show & Close Ratio"
         color="#F59E0B"
         stats={[
-          { label: 'Yesterday', value: '—', sub: 'Ref Show / Close' },
-          { label: 'This Week', value: '—', sub: 'Ref Show / Close' },
-          { label: 'This Month', value: '—', sub: 'Ref Show / Close' },
-          { label: 'YTD', value: '—', sub: 'Ref Show / Close' },
+          { label: 'Yesterday', value: loading ? '...' : `${fmt(y?.refShowRatio || 0, 'ratio')} / ${fmt(y?.refCloseRatio || 0, 'ratio')}`, sub: 'Ref Show / Close' },
+          { label: 'This Week', value: loading ? '...' : `${fmt(w?.refShowRatio || 0, 'ratio')} / ${fmt(w?.refCloseRatio || 0, 'ratio')}`, sub: 'Ref Show / Close' },
+          { label: 'This Month', value: loading ? '...' : `${fmt(m?.refShowRatio || 0, 'ratio')} / ${fmt(m?.refCloseRatio || 0, 'ratio')}`, sub: 'Ref Show / Close' },
+          { label: 'YTD', value: loading ? '...' : `${fmt(ytd?.refShowRatio || 0, 'ratio')} / ${fmt(ytd?.refCloseRatio || 0, 'ratio')}`, sub: 'Ref Show / Close' },
         ]}
       />
-      
-{/* Live Alerts */}
+
+      {/* Live Alerts */}
       <AlertsPanel missingReports={[]} />
 
       <div style={{ height: '14px' }} />
-      
+
       {/* Leaderboard + Activity Feed */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.6fr', gap: '14px' }}>
         <LeaderboardPanel entries={[]} />
