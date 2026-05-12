@@ -22,6 +22,7 @@ const AGENT_NAMES: Record<string, any> = {
   '18': { name: 'Endi A.', role: 'Inactive', tier: 'I Tier', color: '#EF4444', initials: 'EA', start: 'Jan 2023', manager: 'Enri S.' },
   '19': { name: 'Klaudiana V.', role: 'Inactive', tier: 'I Tier', color: '#EF4444', initials: 'KV', start: 'Jan 2023', manager: 'Enri S.' },
   '20': { name: 'Enri S.', role: 'Agency Owner · A Tier', tier: 'A Tier', color: '#00E5A0', initials: 'ES', start: 'Jan 2020', manager: 'AO Globe Life' },
+  '21': { name: 'Bruno N.', role: 'S Tier Producer', tier: 'S Tier', color: '#F59E0B', initials: 'BN', start: 'May 2026', manager: 'Enri S.' },
 }
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
