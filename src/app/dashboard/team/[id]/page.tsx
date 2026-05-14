@@ -37,6 +37,45 @@ const DEFAULT_STATS: {
   coaching: [],
 }
 
+interface DailyReport {
+  id: string
+  report_date: string
+  appointments_set: number
+  sits: number
+  sales: number
+  alp_written: number
+  referral_appointments: number
+  referral_sits: number
+  referral_sales: number
+  referral_alp: number
+  win_of_day: string
+  struggles: string
+}
+
+interface ReportStats {
+  totalReports: number
+  totalAppointments: number
+  totalSits: number
+  totalSales: number
+  totalALP: number
+  totalRefALP: number
+  showRatio: number
+  closeRatio: number
+  avgALPPerSale: number
+}
+
+const PAGE_SIZE = 10
+
+function formatDate(dateStr: string) {
+  const d = new Date(dateStr + 'T00:00:00')
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+function formatCurrency(val: number) {
+  if (val >= 1000) return `$${(val / 1000).toFixed(1)}k`
+  return `$${val.toFixed(0)}`
+}
+
 export default function AgentProfilePage({ params }: { params: { id: string } }) {
   const base = AGENT_NAMES[params.id]
   const [stats, setStats] = useState(DEFAULT_STATS)
@@ -47,6 +86,14 @@ export default function AgentProfilePage({ params }: { params: { id: string } })
   const [loading, setLoading] = useState(true)
   const [coachingNote, setCoachingNote] = useState('')
   const [savedMessage, setSavedMessage] = useState('')
+
+  // JotForm report state
+  const [reports, setReports] = useState<DailyReport[]>([])
+  const [reportStats, setReportStats] = useState<ReportStats | null>(null)
+  const [reportTotal, setReportTotal] = useState(0)
+  const [reportPage, setReportPage] = useState(0)
+  const [reportsLoading, setReportsLoading] = useState(false)
+  const [expandedRow, setExpandedRow] = useState<string | null>(null)
 
   useEffect(() => {
     async function loadAgent() {
@@ -76,6 +123,30 @@ export default function AgentProfilePage({ params }: { params: { id: string } })
     }
     loadAgent()
   }, [params.id])
+
+  // Load JotForm reports when Activity tab is opened
+  useEffect(() => {
+    if (activeTab === 'activity') {
+      fetchReports(reportPage)
+    }
+  }, [activeTab, reportPage])
+
+  async function fetchReports(page: number) {
+    setReportsLoading(true)
+    try {
+      const offset = page * PAGE_SIZE
+      const res = await fetch(`/api/reports?agent_id=${params.id}&limit=${PAGE_SIZE}&offset=${offset}`)
+      const json = await res.json()
+      if (json.reports) {
+        setReports(json.reports)
+        setReportStats(json.stats)
+        setReportTotal(json.total || 0)
+      }
+    } catch (e) {
+      console.error('Failed to load reports', e)
+    }
+    setReportsLoading(false)
+  }
 
   if (!base) return (
     <div style={{ padding: '40px', textAlign: 'center', color: '#7A90A8', fontFamily: 'system-ui' }}>
@@ -139,6 +210,7 @@ export default function AgentProfilePage({ params }: { params: { id: string } })
   const agent = { ...base, ...stats }
   const healthColor = agent.health === 'green' ? '#00E5A0' : agent.health === 'yellow' ? '#F59E0B' : '#EF4444'
   const maxMonthly = Math.max(...agent.monthly.filter((v: number) => v > 0), 1)
+  const totalPages = Math.ceil(reportTotal / PAGE_SIZE)
 
   const inputStyle = {
     width: '100%', background: '#07090D', border: '1px solid #1C2A3A',
@@ -309,7 +381,7 @@ export default function AgentProfilePage({ params }: { params: { id: string } })
         ))}
       </div>
 
-      {/* Overview */}
+      {/* Overview Tab */}
       {activeTab === 'overview' && (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
           <div style={{ background: '#0C1018', border: '1px solid #1C2A3A', borderRadius: '12px', padding: '16px' }}>
@@ -348,32 +420,134 @@ export default function AgentProfilePage({ params }: { params: { id: string } })
         </div>
       )}
 
-      {/* Activity */}
+      {/* Activity Tab — JotForm Data */}
       {activeTab === 'activity' && (
-        <div style={{ background: '#0C1018', border: '1px solid #1C2A3A', borderRadius: '12px', padding: '16px' }}>
-          <div style={{ fontSize: '10px', color: '#7A90A8', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '12px' }}>Performance Stats</div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '16px' }}>
-            {[
-              { label: 'Avg Daily Dials', value: agent.dials > 0 ? String(agent.dials) : '—', color: '#60A5FA' },
-              { label: 'Avg Daily Sits', value: agent.sits > 0 ? String(agent.sits) : '—', color: '#00E5A0' },
-              { label: 'Close Rate', value: agent.close > 0 ? `${agent.close}%` : '—', color: agent.close >= 45 ? '#00E5A0' : '#F59E0B' },
-              { label: 'Refs / Sale', value: agent.refs > 0 ? String(agent.refs) : '—', color: '#A78BFA' },
-              { label: 'YTD ALP', value: agent.ytd > 0 ? `$${(agent.ytd/1000).toFixed(0)}K` : '—', color: '#00E5A0' },
-              { label: 'Month ALP', value: agent.month > 0 ? `$${(agent.month/1000).toFixed(1)}K` : '—', color: '#60A5FA' },
-            ].map(s => (
-              <div key={s.label} style={{ background: '#111820', borderRadius: '8px', padding: '12px', textAlign: 'center' }}>
-                <div style={{ fontSize: '20px', fontWeight: '700', color: s.color }}>{s.value}</div>
-                <div style={{ fontSize: '9px', color: '#3D5068', textTransform: 'uppercase', letterSpacing: '1px', marginTop: '3px' }}>{s.label}</div>
+        <div>
+          {reportsLoading && (
+            <div style={{ textAlign: 'center', color: '#7A90A8', fontSize: '12px', padding: '40px' }}>
+              Loading report data...
+            </div>
+          )}
+
+          {!reportsLoading && reportStats && reportStats.totalReports === 0 && (
+            <div style={{ background: '#0C1018', border: '1px solid #1C2A3A', borderRadius: '12px', padding: '40px', textAlign: 'center', color: '#3D5068', fontSize: '12px' }}>
+              No daily reports submitted yet for {agent.name}.
+            </div>
+          )}
+
+          {!reportsLoading && reportStats && reportStats.totalReports > 0 && (
+            <>
+              {/* Summary Stats from JotForm */}
+              <div style={{ marginBottom: '14px' }}>
+                <div style={{ fontSize: '10px', color: '#7A90A8', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '10px' }}>
+                  All-Time from Daily Reports ({reportStats.totalReports} reports)
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                  {[
+                    { label: 'Total ALP', value: formatCurrency(reportStats.totalALP), color: '#00E5A0' },
+                    { label: 'Show Ratio', value: `${reportStats.showRatio}%`, color: '#60A5FA' },
+                    { label: 'Close Ratio', value: `${reportStats.closeRatio}%`, color: '#A78BFA' },
+                    { label: 'Total Sales', value: String(reportStats.totalSales), color: '#00E5A0' },
+                    { label: 'Total Sits', value: String(reportStats.totalSits), color: '#60A5FA' },
+                    { label: 'Avg ALP/Sale', value: formatCurrency(reportStats.avgALPPerSale), color: '#F59E0B' },
+                  ].map(s => (
+                    <div key={s.label} style={{ background: '#0C1018', border: '1px solid #1C2A3A', borderRadius: '10px', padding: '12px', textAlign: 'center' }}>
+                      <div style={{ fontSize: '20px', fontWeight: '700', color: s.color }}>{s.value}</div>
+                      <div style={{ fontSize: '9px', color: '#3D5068', textTransform: 'uppercase', letterSpacing: '1px', marginTop: '3px' }}>{s.label}</div>
+                    </div>
+                  ))}
+                </div>
               </div>
-            ))}
-          </div>
-          <div style={{ background: '#111820', borderRadius: '8px', padding: '12px', textAlign: 'center', color: '#3D5068', fontSize: '12px' }}>
-            Daily report history will appear here once agents start submitting reports.
-          </div>
+
+              {/* Report History Table */}
+              <div style={{ background: '#0C1018', border: '1px solid #1C2A3A', borderRadius: '12px', overflow: 'hidden' }}>
+                <div style={{ fontSize: '10px', color: '#7A90A8', textTransform: 'uppercase', letterSpacing: '1.5px', padding: '14px 16px', borderBottom: '1px solid #1C2A3A' }}>
+                  Report History
+                </div>
+
+                {/* Table Header */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 0.8fr 0.8fr 0.8fr 1fr 1fr 0.8fr', gap: '0', padding: '8px 16px', background: '#111820', borderBottom: '1px solid #1C2A3A' }}>
+                  {['Date', 'Appts', 'Sits', 'Sales', 'ALP', 'Ref ALP', 'Notes'].map(h => (
+                    <div key={h} style={{ fontSize: '9px', color: '#3D5068', textTransform: 'uppercase', letterSpacing: '1px' }}>{h}</div>
+                  ))}
+                </div>
+
+                {/* Rows */}
+                {reports.map((report) => {
+                  const isExpanded = expandedRow === report.id
+                  const hasNotes = report.win_of_day || report.struggles
+                  return (
+                    <div key={report.id} style={{ borderBottom: '1px solid rgba(28,42,58,0.4)' }}>
+                      <div
+                        onClick={() => hasNotes && setExpandedRow(isExpanded ? null : report.id)}
+                        style={{ display: 'grid', gridTemplateColumns: '1.4fr 0.8fr 0.8fr 0.8fr 1fr 1fr 0.8fr', gap: '0', padding: '10px 16px', fontSize: '12px', cursor: hasNotes ? 'pointer' : 'default', background: isExpanded ? '#111820' : 'transparent' }}
+                      >
+                        <div style={{ color: '#ECF0F5', fontWeight: '500' }}>{formatDate(report.report_date)}</div>
+                        <div style={{ color: '#7A90A8' }}>{report.appointments_set ?? '—'}</div>
+                        <div style={{ color: '#7A90A8' }}>{report.sits ?? '—'}</div>
+                        <div style={{ color: '#7A90A8' }}>{report.sales ?? '—'}</div>
+                        <div style={{ color: '#00E5A0', fontWeight: '600' }}>{report.alp_written > 0 ? formatCurrency(report.alp_written) : '—'}</div>
+                        <div style={{ color: '#60A5FA' }}>{report.referral_alp > 0 ? formatCurrency(report.referral_alp) : '—'}</div>
+                        <div style={{ color: '#3D5068', fontSize: '10px' }}>
+                          {hasNotes ? (isExpanded ? '▲ hide' : '▼ view') : '—'}
+                        </div>
+                      </div>
+
+                      {/* Expanded Notes */}
+                      {isExpanded && hasNotes && (
+                        <div style={{ padding: '10px 16px 14px', background: '#111820', borderTop: '1px solid #1C2A3A', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                          {report.win_of_day && (
+                            <div>
+                              <div style={{ fontSize: '9px', color: '#00E5A0', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>Win of Day</div>
+                              <div style={{ fontSize: '12px', color: '#7A90A8', lineHeight: '1.5' }}>{report.win_of_day}</div>
+                            </div>
+                          )}
+                          {report.struggles && (
+                            <div>
+                              <div style={{ fontSize: '9px', color: '#F59E0B', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>Struggles</div>
+                              <div style={{ fontSize: '12px', color: '#7A90A8', lineHeight: '1.5' }}>{report.struggles}</div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderTop: '1px solid #1C2A3A' }}>
+                    <span style={{ fontSize: '11px', color: '#3D5068' }}>
+                      {reportPage * PAGE_SIZE + 1}–{Math.min((reportPage + 1) * PAGE_SIZE, reportTotal)} of {reportTotal} reports
+                    </span>
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      <button
+                        onClick={() => setReportPage(p => Math.max(0, p - 1))}
+                        disabled={reportPage === 0}
+                        style={{ padding: '5px 12px', borderRadius: '6px', fontSize: '11px', border: '1px solid #1C2A3A', background: 'transparent', color: reportPage === 0 ? '#3D5068' : '#7A90A8', cursor: reportPage === 0 ? 'not-allowed' : 'pointer' }}
+                      >
+                        ← Prev
+                      </button>
+                      <span style={{ padding: '5px 10px', fontSize: '11px', color: '#3D5068' }}>
+                        {reportPage + 1} / {totalPages}
+                      </span>
+                      <button
+                        onClick={() => setReportPage(p => Math.min(totalPages - 1, p + 1))}
+                        disabled={reportPage >= totalPages - 1}
+                        style={{ padding: '5px 12px', borderRadius: '6px', fontSize: '11px', border: '1px solid #1C2A3A', background: 'transparent', color: reportPage >= totalPages - 1 ? '#3D5068' : '#7A90A8', cursor: reportPage >= totalPages - 1 ? 'not-allowed' : 'pointer' }}
+                      >
+                        Next →
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </div>
       )}
 
-      {/* Coaching */}
+      {/* Coaching Tab */}
       {activeTab === 'coaching' && (
         <div style={{ background: '#0C1018', border: '1px solid #1C2A3A', borderRadius: '12px', padding: '16px' }}>
           <div style={{ fontSize: '10px', color: '#7A90A8', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '12px' }}>Coaching History</div>
