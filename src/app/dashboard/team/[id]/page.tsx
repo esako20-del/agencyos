@@ -86,6 +86,7 @@ export default function AgentProfilePage({ params }: { params: { id: string } })
   const [loading, setLoading] = useState(true)
   const [coachingNote, setCoachingNote] = useState('')
   const [savedMessage, setSavedMessage] = useState('')
+  const [agentUUID, setAgentUUID] = useState('')
 
   // JotForm report state
   const [reports, setReports] = useState<DailyReport[]>([])
@@ -101,6 +102,7 @@ export default function AgentProfilePage({ params }: { params: { id: string } })
       try {
         const res = await fetch(`/api/agents?name=${encodeURIComponent(base.name)}`)
         const { data } = await res.json()
+        setAgentUUID(data.id)
         if (data) {
           const loaded = {
             ytd: data.ytd_alp || 0,
