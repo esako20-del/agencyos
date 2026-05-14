@@ -137,7 +137,7 @@ export default function AgentProfilePage({ params }: { params: { id: string } })
     setReportsLoading(true)
     try {
       const offset = page * PAGE_SIZE
-      const res = await fetch(`/api/reports?agent_id=${params.id}&limit=${PAGE_SIZE}&offset=${offset}`)
+      const res = await fetch(`/api/reports?agent_id=${agentUUID}&limit=${PAGE_SIZE}&offset=${offset}`)
       const json = await res.json()
       if (json.reports) {
         setReports(json.reports)
