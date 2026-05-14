@@ -44,13 +44,16 @@ export default function DashboardPage() {
   useEffect(() => {
     async function load() {
       try {
-        const res = await fetch('/api/teamstats')
+        const res = await fetch('/api/teamstats', { cache: 'no-store' })
         const { data } = await res.json()
         setStats(data)
       } catch (e) {}
       setLoading(false)
     }
     load()
+    // Auto refresh every 5 minutes
+    const interval = setInterval(load, 5 * 60 * 1000)
+    return () => clearInterval(interval)
   }, [])
 
   const y = stats?.yesterday
