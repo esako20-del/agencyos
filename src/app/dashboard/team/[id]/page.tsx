@@ -95,6 +95,7 @@ export default function AgentProfilePage({ params }: { params: { id: string } })
   const [reportPage, setReportPage] = useState(0)
   const [reportsLoading, setReportsLoading] = useState(false)
   const [expandedRow, setExpandedRow] = useState<string | null>(null)
+  const [headerStats, setHeaderStats] = useState<ReportStats | null>(null)
 
   useEffect(() => {
     async function loadAgent() {
@@ -134,21 +135,84 @@ export default function AgentProfilePage({ params }: { params: { id: string } })
   }, [activeTab, reportPage])
 
   async function fetchReports(page: number) {
-    setReportsLoading(true)
-    try {
-      const offset = page * PAGE_SIZE
-      const res = await fetch(`/api/reports?agent_id=${agentUUID}&limit=${PAGE_SIZE}&offset=${offset}`)
-      const json = await res.json()
-      if (json.reports) {
-        setReports(json.reports)
-        setReportStats(json.stats)
-        setReportTotal(json.total || 0)
-      }
-    } catch (e) {
-      console.error('Failed to load reports', e)
+  setReportsLoading(true)
+  try {
+    const offset = page * PAGE_SIZE
+
+    // Fetch paginated reports for the table
+    const res = await fetch(`/api/reports?agent_id=${agentUUID}&limit=${PAGE_SIZE}&offset=${offset}`)
+    const json = await res.json()
+    if (json.reports) {
+      setReports(json.reports)
+      setReportStats(json.stats)
+      setReportTotal(json.total || 0)
     }
-    setReportsLoading(false)
+
+    // Fetch ALL reports to calculate header stats
+    const allRes = await fetch(`/api/reports?agent_id=${agentUUID}&limit=1000&offset=0`)
+    const allJson = await allRes.json()
+    if (allJson.reports) {
+      const allReports: DailyReport[] = allJson.reports
+
+      const now = new Date()
+      const thisYear = now.getFullYear()
+      const thisMonth = now.getMonth()
+
+      // YTD ALP
+      const ytdALP = allReports
+        .filter(r => new Date(r.report_date + 'T00:00:00').getFullYear() === thisYear)
+        .reduce((sum, r) => sum + (r.alp_written || 0), 0)
+
+      // This Month ALP
+      const monthALP = allReports
+        .filter(r => {
+          const d = new Date(r.report_date + 'T00:00:00')
+          return d.getFullYear() === thisYear && d.getMonth() === thisMonth
+        })
+        .reduce((sum, r) => sum + (r.alp_written || 0), 0)
+
+      // Close Rate
+      const totalSits = allReports.reduce((sum, r) => sum + (r.sits || 0), 0)
+      const totalSales = allReports.reduce((sum, r) => sum + (r.sales || 0), 0)
+      const closeRate = totalSits > 0 ? Math.round((totalSales / totalSits) * 100) : 0
+
+      // Day Streak — consecutive days with sales > 0 going back from today
+      const sortedDates = allReports
+        .filter(r => (r.sales || 0) > 0)
+        .map(r => r.report_date)
+        .sort((a, b) => b.localeCompare(a))
+
+      let streak = 0
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      let checkDate = new Date(today)
+
+      for (let i = 0; i < 365; i++) {
+        const dateStr = checkDate.toISOString().split('T')[0]
+        if (sortedDates.includes(dateStr)) {
+          streak++
+          checkDate.setDate(checkDate.getDate() - 1)
+        } else {
+          break
+        }
+      }
+
+      // Update header stats — override manual values if JotForm data exists
+      if (allReports.length > 0) {
+        setStats(prev => ({
+          ...prev,
+          ytd: ytdALP || prev.ytd,
+          month: monthALP || prev.month,
+          close: closeRate || prev.close,
+          streak: streak,
+        }))
+      }
+    }
+  } catch (e) {
+    console.error('Failed to load reports', e)
   }
+  setReportsLoading(false)
+}
 
   if (!base) return (
     <div style={{ padding: '40px', textAlign: 'center', color: '#7A90A8', fontFamily: 'system-ui' }}>
