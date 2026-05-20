@@ -1,125 +1,41 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 
-// ─── Helper: extract a numeric field from raw, trying multiple possible keys ──
-function extractNumber(raw: Record<string, any>, ...keys: string[]): number {
-  for (const key of keys) {
-    const val = raw[key]
-    if (val !== undefined && val !== '' && val !== null) {
-      const num = parseFloat(String(val))
-      if (!isNaN(num)) return num
-    }
-  }
-  return 0
-}
-
-// ─── Helper: extract a string field from raw, trying multiple possible keys ──
-function extractString(raw: Record<string, any>, ...keys: string[]): string {
-  for (const key of keys) {
-    const val = raw[key]
-    if (val !== undefined && val !== '' && val !== null) return String(val)
-  }
-  return ''
-}
-
 // ─── POST: JotForm webhook ────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
   try {
     const text = await req.text()
 
-    // Log full raw text so we can see all field keys
-    console.log('=== FULL RAW BODY (first 3000 chars) ===')
-    console.log(text.substring(0, 3000))
-
     // Parse rawRequest JSON from JotForm multipart data
     const rawMatch = text.match(/"rawRequest"\r\n\r\n(\{[\s\S]*?\})\r\n-+/)
     if (!rawMatch) {
-      console.log('rawRequest not found, trying alternate parse')
-      console.log('Text length:', text.length)
-      return NextResponse.json({ error: 'Could not parse rawRequest', sample: text.substring(0, 500) }, { status: 400 })
+      return NextResponse.json({ error: 'Could not parse rawRequest' }, { status: 400 })
     }
 
     const raw = JSON.parse(rawMatch[1])
 
-    // Log ALL keys and their values so we can map them
-    console.log('=== ALL FIELD KEYS AND VALUES ===')
-    Object.entries(raw).forEach(([key, val]) => {
-      console.log(`  ${key}: ${JSON.stringify(val)}`)
-    })
+    // ── Extract fields using confirmed JotForm field IDs ─────────────────────
+    const agentName    = raw['q3_agentName']    || ''
+    const dateObj      = raw['q4_date']         || {}
+    const appointments = parseInt(raw['q6_totalAppointments'] || '0') || 0
+    const sits         = parseInt(raw['q7_totalSits']         || '0') || 0
+    const sales        = parseInt(raw['q8_number8']           || '0') || 0
+    const alp          = parseFloat(raw['q9_number9']         || '0') || 0
+    const refAppts     = parseInt(raw['q10_number10']         || '0') || 0
+    const refSits      = parseInt(raw['q11_number11']         || '0') || 0
+    const refSales     = parseInt(raw['q12_number12']         || '0') || 0
+    const refAlp       = parseFloat(raw['q13_number13']       || '0') || 0
+    const winOfDay     = raw['q14_winOf']  || raw['q15_winOf']  || ''
+    const struggles    = raw['q15_notes']  || raw['q16_notes']  || ''
 
-    // ── Agent Name ──────────────────────────────────────────────────────────
-    const agentName = extractString(raw,
-      'q3_agentName', 'q1_agentName', 'q2_agentName',
-      'q3_agent', 'q1_agent', 'q2_agent',
-      'q3_name', 'q1_name'
-    )
-
-    // ── Date ────────────────────────────────────────────────────────────────
-    const dateObj = raw['q14_date'] || raw['q2_date'] || raw['q4_date'] || raw['q3_date'] || {}
+    // ── Format date ──────────────────────────────────────────────────────────
     let formattedDate = new Date().toISOString().split('T')[0]
-    if (dateObj && dateObj.year && dateObj.month && dateObj.day) {
+    if (dateObj.year && dateObj.month && dateObj.day) {
       formattedDate = `${dateObj.year}-${String(dateObj.month).padStart(2, '0')}-${String(dateObj.day).padStart(2, '0')}`
     }
 
-    // ── Core Stats — try every plausible key ────────────────────────────────
-    const appointments = extractNumber(raw,
-      'q5_totalAppointments', 'q3_totalAppointments', 'q4_totalAppointments',
-      'q6_totalAppointments', 'q7_totalAppointments',
-      'q3_total', 'q4_total', 'q5_total',
-      'q3_appointments', 'q4_appointments', 'q5_appointments'
-    )
-
-    const sits = extractNumber(raw,
-      'q6_totalSits', 'q4_totalSits', 'q5_totalSits',
-      'q7_totalSits', 'q8_totalSits',
-      'q4_sits', 'q5_sits', 'q6_sits',
-      'q4_total2', 'q5_total2'
-    )
-
-    const sales = extractNumber(raw,
-      'q8_number8', 'q5_sales', 'q6_sales', 'q7_sales',
-      'q8_sales', 'q5_totalSales', 'q6_totalSales', 'q7_totalSales',
-      'q5_number', 'q6_number', 'q7_number'
-    )
-
-    const alp = extractNumber(raw,
-      'q9_number9', 'q6_alp', 'q7_alp', 'q8_alp',
-      'q6_totalAlp', 'q7_totalAlp', 'q8_totalAlp',
-      'q6_number', 'q7_number', 'q8_number'
-    )
-
-    const refAppts = extractNumber(raw,
-      'q10_number10', 'q7_referralAppointments', 'q8_referralAppointments',
-      'q9_referralAppointments', 'q7_refAppts', 'q8_refAppts',
-      'q7_number', 'q8_number', 'q9_number'
-    )
-
-    const refSits = extractNumber(raw,
-      'q11_number11', 'q8_referralSits', 'q9_referralSits',
-      'q10_referralSits', 'q8_refSits', 'q9_refSits',
-      'q8_number2', 'q9_number2', 'q10_number'
-    )
-
-    const refSales = extractNumber(raw,
-      'q12_number12', 'q9_referralSales', 'q10_referralSales',
-      'q11_referralSales', 'q9_refSales', 'q10_refSales',
-      'q9_number', 'q10_number', 'q11_number'
-    )
-
-    const refAlp = extractNumber(raw,
-      'q13_number13', 'q10_referralAlp', 'q11_referralAlp',
-      'q12_referralAlp', 'q10_refAlp', 'q11_refAlp',
-      'q10_number2', 'q11_number2', 'q12_number'
-    )
-
-    const winOfDay  = extractString(raw, 'q14_winOf', 'q15_winOf', 'q11_winOf', 'q12_winOf')
-    const struggles = extractString(raw, 'q15_notes', 'q16_notes', 'q12_notes', 'q13_notes')
-
-    console.log('=== EXTRACTED VALUES ===')
-    console.log({ agentName, formattedDate, appointments, sits, sales, alp, refAppts, refSits, refSales, refAlp })
-
     if (!agentName) {
-      return NextResponse.json({ error: 'Agent name empty', allKeys: Object.keys(raw) }, { status: 400 })
+      return NextResponse.json({ error: 'Agent name empty' }, { status: 400 })
     }
 
     // ── Find agent in database ───────────────────────────────────────────────
@@ -194,14 +110,14 @@ export async function GET(req: NextRequest) {
     if (statsError) return NextResponse.json({ error: statsError.message }, { status: 400 })
 
     const totalReports      = allReports?.length || 0
-    const totalAppointments = allReports?.reduce((s, r) => s + (r.appointments_set       || 0), 0) || 0
-    const totalSits         = allReports?.reduce((s, r) => s + (r.sits                   || 0), 0) || 0
-    const totalSales        = allReports?.reduce((s, r) => s + (r.sales                  || 0), 0) || 0
-    const totalALP          = allReports?.reduce((s, r) => s + (r.alp_written            || 0), 0) || 0
-    const totalRefAppts     = allReports?.reduce((s, r) => s + (r.referral_appointments  || 0), 0) || 0
-    const totalRefSits      = allReports?.reduce((s, r) => s + (r.referral_sits          || 0), 0) || 0
-    const totalRefSales     = allReports?.reduce((s, r) => s + (r.referral_sales         || 0), 0) || 0
-    const totalRefALP       = allReports?.reduce((s, r) => s + (r.referral_alp           || 0), 0) || 0
+    const totalAppointments = allReports?.reduce((s, r) => s + (r.appointments_set      || 0), 0) || 0
+    const totalSits         = allReports?.reduce((s, r) => s + (r.sits                  || 0), 0) || 0
+    const totalSales        = allReports?.reduce((s, r) => s + (r.sales                 || 0), 0) || 0
+    const totalALP          = allReports?.reduce((s, r) => s + (r.alp_written           || 0), 0) || 0
+    const totalRefAppts     = allReports?.reduce((s, r) => s + (r.referral_appointments || 0), 0) || 0
+    const totalRefSits      = allReports?.reduce((s, r) => s + (r.referral_sits         || 0), 0) || 0
+    const totalRefSales     = allReports?.reduce((s, r) => s + (r.referral_sales        || 0), 0) || 0
+    const totalRefALP       = allReports?.reduce((s, r) => s + (r.referral_alp          || 0), 0) || 0
 
     return NextResponse.json({
       reports,
