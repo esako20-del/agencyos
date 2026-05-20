@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
     const agentName = raw['q3_agentName'] || ''
     const dateObj = raw['q14_date'] || {}
     const appointments = parseInt(raw['q5_totalAppointments'] || raw['q3_totalAppointments'] || raw['q3_total'] || '0') || 0
-const sits = parseInt(raw['q6_totalSits'] || raw['q4_totalSits'] || raw['q4_total'] || '0') || 0
+    const sits = parseInt(raw['q6_totalSits'] || raw['q4_totalSits'] || raw['q4_total'] || '0') || 0
     const sales = parseInt(raw['q8_number8'] || '0') || 0
     const alp = parseFloat(raw['q9_number9'] || '0') || 0
     const refAppts = parseInt(raw['q10_number10'] || '0') || 0
