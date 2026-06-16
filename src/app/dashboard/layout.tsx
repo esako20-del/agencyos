@@ -83,7 +83,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               Live
             </div>
             <div style={{ background: '#111820', border: '1px solid #1C2A3A', padding: '5px 11px', borderRadius: '6px', fontSize: '11px', color: '#7A90A8' }}>
-              May 2026
+              {new Date().toLocaleString('en-US', { timeZone: 'America/New_York', month: 'long', year: 'numeric' })}
             </div>
           </div>
         </div>
