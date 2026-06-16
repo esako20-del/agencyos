@@ -2,24 +2,24 @@
 import { useState, useEffect, useCallback } from 'react'
 
 const AGENT_NAMES: Record<string, any> = {
-  '1':  { name: 'Jonis H.',   role: 'Top Producer',        tier: 'S Tier', color: '#F59E0B', initials: 'JH', start: 'Jan 2022', manager: 'Enri S.' },
-  '2':  { name: 'Caitlyn R.', role: 'A Tier Producer',     tier: 'A Tier', color: '#00E5A0', initials: 'CR', start: 'Jan 2022', manager: 'Enri S.' },
-  '3':  { name: 'Luis K.',    role: 'A Tier Producer',     tier: 'A Tier', color: '#00E5A0', initials: 'LK', start: 'Jan 2022', manager: 'Enri S.' },
-  '5':  { name: 'Ardit M.',   role: 'B Tier Producer',     tier: 'B Tier', color: '#3B82F6', initials: 'AM', start: 'Jan 2023', manager: 'Enri S.' },
-  '6':  { name: 'Adrian B.',  role: 'B Tier Producer',     tier: 'B Tier', color: '#3B82F6', initials: 'AB', start: 'Jan 2023', manager: 'Enri S.' },
-  '7':  { name: 'Dayell F.',  role: 'B Tier Producer',     tier: 'B Tier', color: '#3B82F6', initials: 'DF', start: 'Jan 2023', manager: 'Enri S.' },
-  '9':  { name: 'Kelsey S.',  role: 'C Tier Producer',     tier: 'C Tier', color: '#A78BFA', initials: 'KS', start: 'Jan 2023', manager: 'Enri S.' },
-  '10': { name: 'Edlira S.',  role: 'C Tier Producer',     tier: 'C Tier', color: '#A78BFA', initials: 'ES', start: 'Jan 2023', manager: 'Enri S.' },
-  '11': { name: 'Matthew H.', role: 'C Tier Producer',     tier: 'C Tier', color: '#A78BFA', initials: 'MH', start: 'Jan 2023', manager: 'Enri S.' },
-  '12': { name: 'Drew C.',    role: 'C Tier Producer',     tier: 'C Tier', color: '#A78BFA', initials: 'DC', start: 'Jan 2023', manager: 'Enri S.' },
-  '13': { name: 'Nadirah M.', role: 'C Tier Producer',     tier: 'C Tier', color: '#A78BFA', initials: 'NM', start: 'Jan 2023', manager: 'Enri S.' },
-  '14': { name: 'Tiffany S.', role: 'C Tier Producer',     tier: 'C Tier', color: '#A78BFA', initials: 'TS', start: 'Jan 2023', manager: 'Enri S.' },
-  '15': { name: 'Jorge R.',   role: 'In Training',         tier: 'T Tier', color: '#F97316', initials: 'JR', start: 'Jan 2024', manager: 'Enri S.' },
-  '16': { name: 'Alyssa H.',  role: 'In Training',         tier: 'T Tier', color: '#F97316', initials: 'AH', start: 'Jan 2024', manager: 'Enri S.' },
-  '17': { name: 'Llambi T.',  role: 'Inactive',            tier: 'I Tier', color: '#EF4444', initials: 'LT', start: 'Jan 2023', manager: 'Enri S.' },
-  '18': { name: 'Endi A.',    role: 'Inactive',            tier: 'I Tier', color: '#EF4444', initials: 'EA', start: 'Jan 2023', manager: 'Enri S.' },
+  '1':  { name: 'Jonis H.',   role: 'Top Producer',          tier: 'S Tier', color: '#F59E0B', initials: 'JH', start: 'Jan 2022', manager: 'Enri S.' },
+  '2':  { name: 'Caitlyn R.', role: 'A Tier Producer',       tier: 'A Tier', color: '#00E5A0', initials: 'CR', start: 'Jan 2022', manager: 'Enri S.' },
+  '3':  { name: 'Luis K.',    role: 'A Tier Producer',       tier: 'A Tier', color: '#00E5A0', initials: 'LK', start: 'Jan 2022', manager: 'Enri S.' },
+  '5':  { name: 'Ardit M.',   role: 'B Tier Producer',       tier: 'B Tier', color: '#3B82F6', initials: 'AM', start: 'Jan 2023', manager: 'Enri S.' },
+  '6':  { name: 'Adrian B.',  role: 'B Tier Producer',       tier: 'B Tier', color: '#3B82F6', initials: 'AB', start: 'Jan 2023', manager: 'Enri S.' },
+  '7':  { name: 'Dayell F.',  role: 'B Tier Producer',       tier: 'B Tier', color: '#3B82F6', initials: 'DF', start: 'Jan 2023', manager: 'Enri S.' },
+  '9':  { name: 'Kelsey S.',  role: 'C Tier Producer',       tier: 'C Tier', color: '#A78BFA', initials: 'KS', start: 'Jan 2023', manager: 'Enri S.' },
+  '10': { name: 'Edlira S.',  role: 'C Tier Producer',       tier: 'C Tier', color: '#A78BFA', initials: 'ES', start: 'Jan 2023', manager: 'Enri S.' },
+  '11': { name: 'Matthew H.', role: 'C Tier Producer',       tier: 'C Tier', color: '#A78BFA', initials: 'MH', start: 'Jan 2023', manager: 'Enri S.' },
+  '12': { name: 'Drew C.',    role: 'C Tier Producer',       tier: 'C Tier', color: '#A78BFA', initials: 'DC', start: 'Jan 2023', manager: 'Enri S.' },
+  '13': { name: 'Nadirah M.', role: 'C Tier Producer',       tier: 'C Tier', color: '#A78BFA', initials: 'NM', start: 'Jan 2023', manager: 'Enri S.' },
+  '14': { name: 'Tiffany S.', role: 'C Tier Producer',       tier: 'C Tier', color: '#A78BFA', initials: 'TS', start: 'Jan 2023', manager: 'Enri S.' },
+  '15': { name: 'Jorge R.',   role: 'In Training',           tier: 'T Tier', color: '#F97316', initials: 'JR', start: 'Jan 2024', manager: 'Enri S.' },
+  '16': { name: 'Alyssa H.',  role: 'In Training',           tier: 'T Tier', color: '#F97316', initials: 'AH', start: 'Jan 2024', manager: 'Enri S.' },
+  '17': { name: 'Llambi T.',  role: 'Inactive',              tier: 'I Tier', color: '#EF4444', initials: 'LT', start: 'Jan 2023', manager: 'Enri S.' },
+  '18': { name: 'Endi A.',    role: 'Inactive',              tier: 'I Tier', color: '#EF4444', initials: 'EA', start: 'Jan 2023', manager: 'Enri S.' },
   '20': { name: 'Enri S.',    role: 'Agency Owner · A Tier', tier: 'A Tier', color: '#00E5A0', initials: 'ES', start: 'Jan 2020', manager: 'AO Globe Life' },
-  '21': { name: 'Bruno N.',   role: 'S Tier Producer',     tier: 'S Tier', color: '#F59E0B', initials: 'BN', start: 'May 2026', manager: 'Enri S.' },
+  '21': { name: 'Bruno N.',   role: 'S Tier Producer',       tier: 'S Tier', color: '#F59E0B', initials: 'BN', start: 'Jun 2026', manager: 'Enri S.' },
 }
 
 const MONTHS     = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
@@ -65,46 +65,47 @@ function formatDate(dateStr: string) {
 export default function AgentProfilePage({ params }: { params: { id: string } }) {
   const base = AGENT_NAMES[params.id]
 
-  // Agent data from agents table
   const [agentUUID, setAgentUUID]     = useState('')
   const [manualYTD, setManualYTD]     = useState(0)
   const [manualMonth, setManualMonth] = useState(0)
   const [agentData, setAgentData]     = useState<any>(null)
   const [loading, setLoading]         = useState(true)
 
-  // JotForm calculated header stats
   const [jotYTD, setJotYTD]       = useState(0)
   const [jotMonth, setJotMonth]   = useState(0)
   const [jotClose, setJotClose]   = useState(0)
   const [jotStreak, setJotStreak] = useState(0)
   const [jotLoaded, setJotLoaded] = useState(false)
 
-  // Activity tab report history
-  const [reports, setReports]                 = useState<DailyReport[]>([])
-  const [reportStats, setReportStats]         = useState<ReportStats | null>(null)
-  const [reportTotal, setReportTotal]         = useState(0)
-  const [reportPage, setReportPage]           = useState(0)
-  const [reportsLoading, setReportsLoading]   = useState(false)
-  const [expandedRow, setExpandedRow]         = useState<string | null>(null)
+  const [reports, setReports]               = useState<DailyReport[]>([])
+  const [reportStats, setReportStats]       = useState<ReportStats | null>(null)
+  const [reportTotal, setReportTotal]       = useState(0)
+  const [reportPage, setReportPage]         = useState(0)
+  const [reportsLoading, setReportsLoading] = useState(false)
+  const [expandedRow, setExpandedRow]       = useState<string | null>(null)
 
-  // UI
-  const [activeTab, setActiveTab]         = useState('overview')
-  const [editing, setEditing]             = useState(false)
-  const [editForm, setEditForm]           = useState<any>({})
-  const [saving, setSaving]               = useState(false)
-  const [savedMessage, setSavedMessage]   = useState('')
-  const [coachingNote, setCoachingNote]   = useState('')
+  // Inline report editing state
+  const [editingReportId, setEditingReportId] = useState<string | null>(null)
+  const [reportEditForm, setReportEditForm]   = useState<Partial<DailyReport>>({})
+  const [savingReport, setSavingReport]       = useState(false)
+  const [reportSaveMsg, setReportSaveMsg]     = useState('')
 
-  // Step 1: Load agent record from agents table
+  const [activeTab, setActiveTab]       = useState('overview')
+  const [editing, setEditing]           = useState(false)
+  const [editForm, setEditForm]         = useState<any>({})
+  const [saving, setSaving]             = useState(false)
+  const [savedMessage, setSavedMessage] = useState('')
+  const [coachingNote, setCoachingNote] = useState('')
+
   useEffect(() => {
     if (!base) { setLoading(false); return }
     async function loadAgent() {
       try {
-        const res        = await fetch(`/api/agents?name=${encodeURIComponent(base.name)}`)
-        const { data }   = await res.json()
+        const res      = await fetch(`/api/agents?name=${encodeURIComponent(base.name)}`)
+        const { data } = await res.json()
         if (data) {
           setAgentUUID(data.id)
-          setManualYTD(data.ytd_alp   || 0)
+          setManualYTD(data.ytd_alp    || 0)
           setManualMonth(data.month_alp || 0)
           setAgentData(data)
           setEditForm({
@@ -125,7 +126,6 @@ export default function AgentProfilePage({ params }: { params: { id: string } })
     loadAgent()
   }, [params.id])
 
-  // Step 2: Once UUID is set, load all JotForm reports to calculate header stats
   useEffect(() => {
     if (!agentUUID) return
     async function loadJotFormStats() {
@@ -139,12 +139,10 @@ export default function AgentProfilePage({ params }: { params: { id: string } })
         const thisYear  = now.getFullYear()
         const thisMonth = now.getMonth()
 
-        // YTD ALP from JotForm (this calendar year)
         const ytd = all
           .filter(r => new Date(r.report_date + 'T00:00:00').getFullYear() === thisYear)
           .reduce((s, r) => s + (r.alp_written || 0), 0)
 
-        // This Month ALP from JotForm
         const month = all
           .filter(r => {
             const d = new Date(r.report_date + 'T00:00:00')
@@ -152,12 +150,10 @@ export default function AgentProfilePage({ params }: { params: { id: string } })
           })
           .reduce((s, r) => s + (r.alp_written || 0), 0)
 
-        // Close Rate from JotForm
         const totalSits  = all.reduce((s, r) => s + (r.sits  || 0), 0)
         const totalSales = all.reduce((s, r) => s + (r.sales || 0), 0)
         const close = totalSits > 0 ? Math.round((totalSales / totalSits) * 100) : 0
 
-        // Day Streak — consecutive days with sales > 0 going back from today
         const saleDates = new Set(all.filter(r => (r.sales || 0) > 0).map(r => r.report_date))
         let streak    = 0
         const check   = new Date()
@@ -178,7 +174,6 @@ export default function AgentProfilePage({ params }: { params: { id: string } })
     loadJotFormStats()
   }, [agentUUID])
 
-  // Step 3: Load paginated reports for Activity tab
   const loadReports = useCallback(async (page: number) => {
     if (!agentUUID) return
     setReportsLoading(true)
@@ -199,7 +194,47 @@ export default function AgentProfilePage({ params }: { params: { id: string } })
     if (activeTab === 'activity' && agentUUID) loadReports(reportPage)
   }, [activeTab, reportPage, agentUUID])
 
-  // Header values: manual past data + JotForm current data added together
+  // ── Save edited report row ────────────────────────────────────────────────
+  async function saveReportEdit() {
+    if (!editingReportId) return
+    setSavingReport(true)
+    setReportSaveMsg('')
+    try {
+      const res = await fetch('/api/reports', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: editingReportId, ...reportEditForm }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error)
+      setReportSaveMsg('✓ Saved!')
+      setEditingReportId(null)
+      setReportEditForm({})
+      // Reload reports and JotForm stats
+      loadReports(reportPage)
+      // Reload header stats
+      setJotLoaded(false)
+      const statsRes  = await fetch(`/api/reports?agent_id=${agentUUID}&limit=1000&offset=0`)
+      const statsJson = await statsRes.json()
+      if (statsJson.reports?.length > 0) {
+        const all = statsJson.reports
+        const now = new Date()
+        const ytd = all.filter((r: DailyReport) => new Date(r.report_date + 'T00:00:00').getFullYear() === now.getFullYear()).reduce((s: number, r: DailyReport) => s + (r.alp_written || 0), 0)
+        const month = all.filter((r: DailyReport) => { const d = new Date(r.report_date + 'T00:00:00'); return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() }).reduce((s: number, r: DailyReport) => s + (r.alp_written || 0), 0)
+        const ts = all.reduce((s: number, r: DailyReport) => s + (r.sits || 0), 0)
+        const tsa = all.reduce((s: number, r: DailyReport) => s + (r.sales || 0), 0)
+        setJotYTD(ytd)
+        setJotMonth(month)
+        setJotClose(ts > 0 ? Math.round((tsa / ts) * 100) : 0)
+      }
+      setJotLoaded(true)
+      setTimeout(() => setReportSaveMsg(''), 3000)
+    } catch (e: any) {
+      setReportSaveMsg('Error: ' + e.message)
+    }
+    setSavingReport(false)
+  }
+
   const displayYTD    = manualYTD + jotYTD
   const displayMonth  = manualMonth + jotMonth
   const displayClose  = jotClose
@@ -240,9 +275,9 @@ export default function AgentProfilePage({ params }: { params: { id: string } })
 
   async function handleAddNote() {
     if (!coachingNote.trim()) return
-    const date       = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-    const newNote    = `${date} — ${coachingNote}`
-    const updated    = [newNote, ...(agentData?.coaching_notes || [])]
+    const date    = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+    const newNote = `${date} — ${coachingNote}`
+    const updated = [newNote, ...(agentData?.coaching_notes || [])]
     try {
       await fetch('/api/agents', {
         method: 'PATCH',
@@ -262,6 +297,11 @@ export default function AgentProfilePage({ params }: { params: { id: string } })
   const labelStyle = {
     display: 'block', fontSize: '9px', color: '#3D5068',
     textTransform: 'uppercase' as const, letterSpacing: '1px', marginBottom: '4px',
+  }
+  const smallInputStyle = {
+    width: '100%', background: '#07090D', border: '1px solid #1C2A3A',
+    borderRadius: '4px', padding: '5px 8px', color: '#ECF0F5',
+    fontSize: '11px', outline: 'none', boxSizing: 'border-box' as const, textAlign: 'center' as const,
   }
 
   if (!base) return (
@@ -334,13 +374,12 @@ export default function AgentProfilePage({ params }: { params: { id: string } })
           </div>
         </div>
 
-        {/* Header stats */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1px', background: '#1C2A3A' }}>
           {[
-            { label: 'YTD ALP',    value: displayYTD    > 0 ? `$${(displayYTD / 1000).toFixed(0)}K`    : (jotLoaded ? '—' : '…'), color: '#00E5A0' },
-            { label: 'This Month', value: displayMonth  > 0 ? `$${(displayMonth / 1000).toFixed(1)}K`  : (jotLoaded ? '—' : '…'), color: '#60A5FA' },
-            { label: 'Close Rate', value: displayClose  > 0 ? `${displayClose}%`                       : (jotLoaded ? '—' : '…'), color: displayClose >= 45 ? '#00E5A0' : displayClose >= 30 ? '#F59E0B' : '#EF4444' },
-            { label: 'Day Streak', value: displayStreak > 0 ? `🔥 ${displayStreak}d`                   : (jotLoaded ? '—' : '…'), color: displayStreak > 0 ? '#00E5A0' : '#EF4444' },
+            { label: 'YTD ALP',    value: displayYTD    > 0 ? `$${(displayYTD / 1000).toFixed(0)}K`   : (jotLoaded ? '—' : '…'), color: '#00E5A0' },
+            { label: 'This Month', value: displayMonth  > 0 ? `$${(displayMonth / 1000).toFixed(1)}K` : (jotLoaded ? '—' : '…'), color: '#60A5FA' },
+            { label: 'Close Rate', value: displayClose  > 0 ? `${displayClose}%`                      : (jotLoaded ? '—' : '…'), color: displayClose >= 45 ? '#00E5A0' : displayClose >= 30 ? '#F59E0B' : '#EF4444' },
+            { label: 'Day Streak', value: displayStreak > 0 ? `🔥 ${displayStreak}d`                  : (jotLoaded ? '—' : '…'), color: displayStreak > 0 ? '#00E5A0' : '#EF4444' },
           ].map(s => (
             <div key={s.label} style={{ background: '#0C1018', padding: '14px', textAlign: 'center' }}>
               <div style={{ fontSize: '22px', fontWeight: '700', color: s.color }}>{s.value}</div>
@@ -350,74 +389,29 @@ export default function AgentProfilePage({ params }: { params: { id: string } })
         </div>
       </div>
 
-      {/* Edit Form */}
+      {/* Agent Edit Form */}
       {editing && (
         <div style={{ background: '#0C1018', border: '1px solid #00E5A044', borderRadius: '12px', padding: '20px', marginBottom: '16px' }}>
-          <div style={{ fontSize: '11px', color: '#00E5A0', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '4px', fontWeight: '700' }}>
-            ✏️ Editing — {base.name}
-          </div>
-          <div style={{ fontSize: '10px', color: '#3D5068', marginBottom: '16px' }}>
-            Enter past/manual data here. JotForm data from daily reports is added on top automatically.
-          </div>
+          <div style={{ fontSize: '11px', color: '#00E5A0', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '4px', fontWeight: '700' }}>✏️ Editing — {base.name}</div>
+          <div style={{ fontSize: '10px', color: '#3D5068', marginBottom: '16px' }}>Enter past/manual data here. JotForm data is added on top automatically.</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
-            <div>
-              <label style={labelStyle}>Past YTD ALP ($) — before JotForm</label>
-              <input type="number" style={inputStyle} value={editForm.ytd}
-                onChange={e => setEditForm((f: any) => ({ ...f, ytd: parseInt(e.target.value) || 0 }))} />
-            </div>
-            <div>
-              <label style={labelStyle}>Past Month ALP ($) — before JotForm</label>
-              <input type="number" style={inputStyle} value={editForm.month}
-                onChange={e => setEditForm((f: any) => ({ ...f, month: parseInt(e.target.value) || 0 }))} />
-            </div>
-            <div>
-              <label style={labelStyle}>Avg Daily Sits</label>
-              <input type="number" style={inputStyle} value={editForm.sits}
-                onChange={e => setEditForm((f: any) => ({ ...f, sits: parseInt(e.target.value) || 0 }))} />
-            </div>
-            <div>
-              <label style={labelStyle}>Avg Daily Dials</label>
-              <input type="number" style={inputStyle} value={editForm.dials}
-                onChange={e => setEditForm((f: any) => ({ ...f, dials: parseInt(e.target.value) || 0 }))} />
-            </div>
-            <div>
-              <label style={labelStyle}>Referrals Per Sale</label>
-              <input type="number" style={inputStyle} value={editForm.refs}
-                onChange={e => setEditForm((f: any) => ({ ...f, refs: parseInt(e.target.value) || 0 }))} />
-            </div>
-            <div>
-              <label style={labelStyle}>Lead Types</label>
-              <select style={inputStyle} value={editForm.leads}
-                onChange={e => setEditForm((f: any) => ({ ...f, leads: e.target.value }))}>
-                {LEAD_TYPES.map(l => <option key={l} value={l}>{l}</option>)}
-              </select>
-            </div>
-            <div>
-              <label style={labelStyle}>Health Status</label>
-              <select style={inputStyle} value={editForm.health}
-                onChange={e => setEditForm((f: any) => ({ ...f, health: e.target.value }))}>
-                <option value="green">Healthy</option>
-                <option value="yellow">Watch</option>
-                <option value="red">Needs Help</option>
-              </select>
-            </div>
+            <div><label style={labelStyle}>Past YTD ALP ($) — before JotForm</label><input type="number" style={inputStyle} value={editForm.ytd} onChange={e => setEditForm((f: any) => ({ ...f, ytd: parseInt(e.target.value) || 0 }))} /></div>
+            <div><label style={labelStyle}>Past Month ALP ($) — before JotForm</label><input type="number" style={inputStyle} value={editForm.month} onChange={e => setEditForm((f: any) => ({ ...f, month: parseInt(e.target.value) || 0 }))} /></div>
+            <div><label style={labelStyle}>Avg Daily Sits</label><input type="number" style={inputStyle} value={editForm.sits} onChange={e => setEditForm((f: any) => ({ ...f, sits: parseInt(e.target.value) || 0 }))} /></div>
+            <div><label style={labelStyle}>Avg Daily Dials</label><input type="number" style={inputStyle} value={editForm.dials} onChange={e => setEditForm((f: any) => ({ ...f, dials: parseInt(e.target.value) || 0 }))} /></div>
+            <div><label style={labelStyle}>Referrals Per Sale</label><input type="number" style={inputStyle} value={editForm.refs} onChange={e => setEditForm((f: any) => ({ ...f, refs: parseInt(e.target.value) || 0 }))} /></div>
+            <div><label style={labelStyle}>Lead Types</label><select style={inputStyle} value={editForm.leads} onChange={e => setEditForm((f: any) => ({ ...f, leads: e.target.value }))}>{LEAD_TYPES.map(l => <option key={l} value={l}>{l}</option>)}</select></div>
+            <div><label style={labelStyle}>Health Status</label><select style={inputStyle} value={editForm.health} onChange={e => setEditForm((f: any) => ({ ...f, health: e.target.value }))}><option value="green">Healthy</option><option value="yellow">Watch</option><option value="red">Needs Help</option></select></div>
           </div>
           <div style={{ marginBottom: '12px' }}>
             <label style={labelStyle}>Monthly ALP — Jan through Dec (comma separated)</label>
-            <input type="text" style={inputStyle}
-              value={editForm.monthly.join(',')}
-              onChange={e => {
-                const vals = e.target.value.split(',').map((v: string) => parseInt(v.trim()) || 0)
-                while (vals.length < 12) vals.push(0)
-                setEditForm((f: any) => ({ ...f, monthly: vals.slice(0, 12) }))
-              }}
-              placeholder="5000,6000,7000,8000,9000,10000,0,0,0,0,0,0"
-            />
-            <div style={{ fontSize: '10px', color: '#3D5068', marginTop: '4px' }}>12 numbers separated by commas. Use 0 for months not yet completed.</div>
+            <input type="text" style={inputStyle} value={editForm.monthly.join(',')}
+              onChange={e => { const vals = e.target.value.split(',').map((v: string) => parseInt(v.trim()) || 0); while (vals.length < 12) vals.push(0); setEditForm((f: any) => ({ ...f, monthly: vals.slice(0, 12) })) }}
+              placeholder="5000,6000,7000,8000,9000,10000,0,0,0,0,0,0" />
+            <div style={{ fontSize: '10px', color: '#3D5068', marginTop: '4px' }}>12 numbers separated by commas.</div>
           </div>
-          <button onClick={handleSave} disabled={saving}
-            style={{ background: '#00E5A0', color: '#000', border: 'none', borderRadius: '8px', padding: '10px 24px', fontSize: '12px', fontWeight: '700', cursor: 'pointer', width: '100%' }}>
-            {saving ? 'Saving to database...' : '✓ Save Changes'}
+          <button onClick={handleSave} disabled={saving} style={{ background: '#00E5A0', color: '#000', border: 'none', borderRadius: '8px', padding: '10px 24px', fontSize: '12px', fontWeight: '700', cursor: 'pointer', width: '100%' }}>
+            {saving ? 'Saving...' : '✓ Save Changes'}
           </button>
         </div>
       )}
@@ -430,9 +424,7 @@ export default function AgentProfilePage({ params }: { params: { id: string } })
             cursor: 'pointer', border: 'none', textTransform: 'capitalize',
             background: activeTab === tab ? '#0C1018' : 'transparent',
             color: activeTab === tab ? '#ECF0F5' : '#7A90A8',
-          }}>
-            {tab}
-          </button>
+          }}>{tab}</button>
         ))}
       </div>
 
@@ -442,12 +434,12 @@ export default function AgentProfilePage({ params }: { params: { id: string } })
           <div style={{ background: '#0C1018', border: '1px solid #1C2A3A', borderRadius: '12px', padding: '16px' }}>
             <div style={{ fontSize: '10px', color: '#7A90A8', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '12px' }}>Agent Info</div>
             {[
-              { label: 'Manager',         value: base.manager },
-              { label: 'Lead Types',      value: agentData?.lead_types_text  || '—' },
-              { label: 'Start Date',      value: base.start },
-              { label: 'Avg Daily Dials', value: agentData?.avg_daily_dials  || '—' },
-              { label: 'Avg Daily Sits',  value: agentData?.avg_daily_sits   || '—' },
-              { label: 'Referrals / Sale',value: agentData?.refs_per_sale    || '—' },
+              { label: 'Manager',          value: base.manager },
+              { label: 'Lead Types',       value: agentData?.lead_types_text || '—' },
+              { label: 'Start Date',       value: base.start },
+              { label: 'Avg Daily Dials',  value: agentData?.avg_daily_dials || '—' },
+              { label: 'Avg Daily Sits',   value: agentData?.avg_daily_sits  || '—' },
+              { label: 'Referrals / Sale', value: agentData?.refs_per_sale   || '—' },
             ].map(row => (
               <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 0', borderBottom: '1px solid rgba(28,42,58,0.5)', fontSize: '12px' }}>
                 <span style={{ color: '#7A90A8' }}>{row.label}</span>
@@ -472,16 +464,17 @@ export default function AgentProfilePage({ params }: { params: { id: string } })
       {/* Activity Tab */}
       {activeTab === 'activity' && (
         <div>
-          {reportsLoading && (
-            <div style={{ textAlign: 'center', color: '#7A90A8', fontSize: '12px', padding: '40px' }}>Loading report data...</div>
-          )}
+          {reportsLoading && <div style={{ textAlign: 'center', color: '#7A90A8', fontSize: '12px', padding: '40px' }}>Loading report data...</div>}
+
           {!reportsLoading && (!reportStats || reportStats.totalReports === 0) && (
             <div style={{ background: '#0C1018', border: '1px solid #1C2A3A', borderRadius: '12px', padding: '40px', textAlign: 'center', color: '#3D5068', fontSize: '12px' }}>
               No daily reports submitted yet for {base.name}.
             </div>
           )}
+
           {!reportsLoading && reportStats && reportStats.totalReports > 0 && (
             <>
+              {/* Stats summary */}
               <div style={{ marginBottom: '14px' }}>
                 <div style={{ fontSize: '10px', color: '#7A90A8', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '10px' }}>
                   All-Time from Daily Reports ({reportStats.totalReports} reports)
@@ -503,49 +496,141 @@ export default function AgentProfilePage({ params }: { params: { id: string } })
                 </div>
               </div>
 
+              {/* Report history table */}
               <div style={{ background: '#0C1018', border: '1px solid #1C2A3A', borderRadius: '12px', overflow: 'hidden' }}>
-                <div style={{ fontSize: '10px', color: '#7A90A8', textTransform: 'uppercase', letterSpacing: '1.5px', padding: '14px 16px', borderBottom: '1px solid #1C2A3A' }}>Report History</div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 0.8fr 0.8fr 0.8fr 1fr 1fr 0.8fr', padding: '8px 16px', background: '#111820', borderBottom: '1px solid #1C2A3A' }}>
-                  {['Date','Appts','Sits','Sales','ALP','Ref ALP','Notes'].map(h => (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', borderBottom: '1px solid #1C2A3A' }}>
+                  <div style={{ fontSize: '10px', color: '#7A90A8', textTransform: 'uppercase', letterSpacing: '1.5px' }}>Report History</div>
+                  {reportSaveMsg && (
+                    <span style={{ fontSize: '11px', color: reportSaveMsg.startsWith('Error') ? '#EF4444' : '#00E5A0' }}>{reportSaveMsg}</span>
+                  )}
+                </div>
+
+                {/* Table header */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.7fr 0.7fr 0.7fr 0.9fr 0.9fr 0.7fr 60px', padding: '8px 16px', background: '#111820', borderBottom: '1px solid #1C2A3A' }}>
+                  {['Date','Appts','Sits','Sales','ALP','Ref ALP','Notes',''].map(h => (
                     <div key={h} style={{ fontSize: '9px', color: '#3D5068', textTransform: 'uppercase', letterSpacing: '1px' }}>{h}</div>
                   ))}
                 </div>
+
                 {reports.map(report => {
-                  const isExpanded = expandedRow === report.id
+                  const isEditing  = editingReportId === report.id
+                  const isExpanded = expandedRow === report.id && !isEditing
                   const hasNotes   = report.win_of_day || report.struggles
+
                   return (
                     <div key={report.id} style={{ borderBottom: '1px solid rgba(28,42,58,0.4)' }}>
-                      <div
-                        onClick={() => hasNotes && setExpandedRow(isExpanded ? null : report.id)}
-                        style={{ display: 'grid', gridTemplateColumns: '1.4fr 0.8fr 0.8fr 0.8fr 1fr 1fr 0.8fr', padding: '10px 16px', fontSize: '12px', cursor: hasNotes ? 'pointer' : 'default', background: isExpanded ? '#111820' : 'transparent' }}
-                      >
-                        <div style={{ color: '#ECF0F5', fontWeight: '500' }}>{formatDate(report.report_date)}</div>
-                        <div style={{ color: '#7A90A8' }}>{report.appointments_set ?? '—'}</div>
-                        <div style={{ color: '#7A90A8' }}>{report.sits ?? '—'}</div>
-                        <div style={{ color: '#7A90A8' }}>{report.sales ?? '—'}</div>
-                        <div style={{ color: '#00E5A0', fontWeight: '600' }}>{report.alp_written > 0 ? formatCurrency(report.alp_written) : '—'}</div>
-                        <div style={{ color: '#60A5FA' }}>{report.referral_alp > 0 ? formatCurrency(report.referral_alp) : '—'}</div>
-                        <div style={{ color: '#3D5068', fontSize: '10px' }}>{hasNotes ? (isExpanded ? '▲ hide' : '▼ view') : '—'}</div>
-                      </div>
-                      {isExpanded && hasNotes && (
-                        <div style={{ padding: '10px 16px 14px', background: '#111820', borderTop: '1px solid #1C2A3A', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                          {report.win_of_day && (
+                      {!isEditing ? (
+                        <>
+                          <div
+                            style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.7fr 0.7fr 0.7fr 0.9fr 0.9fr 0.7fr 60px', padding: '10px 16px', fontSize: '12px', background: isExpanded ? '#111820' : 'transparent' }}
+                          >
+                            <div style={{ color: '#ECF0F5', fontWeight: '500', cursor: hasNotes ? 'pointer' : 'default' }} onClick={() => hasNotes && setExpandedRow(isExpanded ? null : report.id)}>
+                              {formatDate(report.report_date)}
+                            </div>
+                            <div style={{ color: '#7A90A8' }}>{report.appointments_set ?? '—'}</div>
+                            <div style={{ color: '#7A90A8' }}>{report.sits ?? '—'}</div>
+                            <div style={{ color: '#7A90A8' }}>{report.sales ?? '—'}</div>
+                            <div style={{ color: '#00E5A0', fontWeight: '600' }}>{report.alp_written > 0 ? formatCurrency(report.alp_written) : '—'}</div>
+                            <div style={{ color: '#60A5FA' }}>{report.referral_alp > 0 ? formatCurrency(report.referral_alp) : '—'}</div>
+                            <div style={{ color: '#3D5068', fontSize: '10px', cursor: hasNotes ? 'pointer' : 'default' }} onClick={() => hasNotes && setExpandedRow(isExpanded ? null : report.id)}>
+                              {hasNotes ? (isExpanded ? '▲' : '▼') : '—'}
+                            </div>
                             <div>
-                              <div style={{ fontSize: '9px', color: '#00E5A0', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>Win of Day</div>
-                              <div style={{ fontSize: '12px', color: '#7A90A8', lineHeight: '1.5' }}>{report.win_of_day}</div>
+                              <button
+                                onClick={() => { setEditingReportId(report.id); setReportEditForm({ ...report }); setExpandedRow(null) }}
+                                style={{ background: '#1C2A3A', border: 'none', color: '#7A90A8', borderRadius: '4px', padding: '3px 8px', fontSize: '10px', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                              >
+                                Edit
+                              </button>
+                            </div>
+                          </div>
+                          {isExpanded && hasNotes && (
+                            <div style={{ padding: '10px 16px 14px', background: '#111820', borderTop: '1px solid #1C2A3A', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                              {report.win_of_day && (
+                                <div>
+                                  <div style={{ fontSize: '9px', color: '#00E5A0', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>Win of Day</div>
+                                  <div style={{ fontSize: '12px', color: '#7A90A8', lineHeight: '1.5' }}>{report.win_of_day}</div>
+                                </div>
+                              )}
+                              {report.struggles && (
+                                <div>
+                                  <div style={{ fontSize: '9px', color: '#F59E0B', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>Struggles</div>
+                                  <div style={{ fontSize: '12px', color: '#7A90A8', lineHeight: '1.5' }}>{report.struggles}</div>
+                                </div>
+                              )}
                             </div>
                           )}
-                          {report.struggles && (
+                        </>
+                      ) : (
+                        /* Inline edit form */
+                        <div style={{ padding: '12px 16px', background: 'rgba(0,229,160,0.03)', borderLeft: '2px solid #00E5A044' }}>
+                          <div style={{ fontSize: '10px', color: '#00E5A0', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '10px', fontWeight: '700' }}>
+                            Editing — {formatDate(report.report_date)}
+                          </div>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', marginBottom: '8px' }}>
                             <div>
-                              <div style={{ fontSize: '9px', color: '#F59E0B', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>Struggles</div>
-                              <div style={{ fontSize: '12px', color: '#7A90A8', lineHeight: '1.5' }}>{report.struggles}</div>
+                              <div style={{ fontSize: '9px', color: '#3D5068', marginBottom: '3px', textTransform: 'uppercase', letterSpacing: '1px' }}>Date</div>
+                              <input type="date" style={smallInputStyle} value={reportEditForm.report_date || ''} onChange={e => setReportEditForm(f => ({ ...f, report_date: e.target.value }))} />
                             </div>
-                          )}
+                            <div>
+                              <div style={{ fontSize: '9px', color: '#3D5068', marginBottom: '3px', textTransform: 'uppercase', letterSpacing: '1px' }}>Appointments</div>
+                              <input type="number" style={smallInputStyle} value={reportEditForm.appointments_set ?? 0} onChange={e => setReportEditForm(f => ({ ...f, appointments_set: parseInt(e.target.value) || 0 }))} />
+                            </div>
+                            <div>
+                              <div style={{ fontSize: '9px', color: '#3D5068', marginBottom: '3px', textTransform: 'uppercase', letterSpacing: '1px' }}>Sits</div>
+                              <input type="number" style={smallInputStyle} value={reportEditForm.sits ?? 0} onChange={e => setReportEditForm(f => ({ ...f, sits: parseInt(e.target.value) || 0 }))} />
+                            </div>
+                            <div>
+                              <div style={{ fontSize: '9px', color: '#3D5068', marginBottom: '3px', textTransform: 'uppercase', letterSpacing: '1px' }}>Sales</div>
+                              <input type="number" style={smallInputStyle} value={reportEditForm.sales ?? 0} onChange={e => setReportEditForm(f => ({ ...f, sales: parseInt(e.target.value) || 0 }))} />
+                            </div>
+                            <div>
+                              <div style={{ fontSize: '9px', color: '#3D5068', marginBottom: '3px', textTransform: 'uppercase', letterSpacing: '1px' }}>ALP ($)</div>
+                              <input type="number" style={smallInputStyle} value={reportEditForm.alp_written ?? 0} onChange={e => setReportEditForm(f => ({ ...f, alp_written: parseFloat(e.target.value) || 0 }))} />
+                            </div>
+                            <div>
+                              <div style={{ fontSize: '9px', color: '#3D5068', marginBottom: '3px', textTransform: 'uppercase', letterSpacing: '1px' }}>Ref Appts</div>
+                              <input type="number" style={smallInputStyle} value={reportEditForm.referral_appointments ?? 0} onChange={e => setReportEditForm(f => ({ ...f, referral_appointments: parseInt(e.target.value) || 0 }))} />
+                            </div>
+                            <div>
+                              <div style={{ fontSize: '9px', color: '#3D5068', marginBottom: '3px', textTransform: 'uppercase', letterSpacing: '1px' }}>Ref Sits</div>
+                              <input type="number" style={smallInputStyle} value={reportEditForm.referral_sits ?? 0} onChange={e => setReportEditForm(f => ({ ...f, referral_sits: parseInt(e.target.value) || 0 }))} />
+                            </div>
+                            <div>
+                              <div style={{ fontSize: '9px', color: '#3D5068', marginBottom: '3px', textTransform: 'uppercase', letterSpacing: '1px' }}>Ref Sales</div>
+                              <input type="number" style={smallInputStyle} value={reportEditForm.referral_sales ?? 0} onChange={e => setReportEditForm(f => ({ ...f, referral_sales: parseInt(e.target.value) || 0 }))} />
+                            </div>
+                            <div>
+                              <div style={{ fontSize: '9px', color: '#3D5068', marginBottom: '3px', textTransform: 'uppercase', letterSpacing: '1px' }}>Ref ALP ($)</div>
+                              <input type="number" style={smallInputStyle} value={reportEditForm.referral_alp ?? 0} onChange={e => setReportEditForm(f => ({ ...f, referral_alp: parseFloat(e.target.value) || 0 }))} />
+                            </div>
+                          </div>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '10px' }}>
+                            <div>
+                              <div style={{ fontSize: '9px', color: '#3D5068', marginBottom: '3px', textTransform: 'uppercase', letterSpacing: '1px' }}>Win of Day</div>
+                              <input type="text" style={smallInputStyle} value={reportEditForm.win_of_day || ''} onChange={e => setReportEditForm(f => ({ ...f, win_of_day: e.target.value }))} placeholder="Optional" />
+                            </div>
+                            <div>
+                              <div style={{ fontSize: '9px', color: '#3D5068', marginBottom: '3px', textTransform: 'uppercase', letterSpacing: '1px' }}>Struggles</div>
+                              <input type="text" style={smallInputStyle} value={reportEditForm.struggles || ''} onChange={e => setReportEditForm(f => ({ ...f, struggles: e.target.value }))} placeholder="Optional" />
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            <button onClick={saveReportEdit} disabled={savingReport}
+                              style={{ background: '#00E5A0', color: '#000', border: 'none', borderRadius: '6px', padding: '7px 16px', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}>
+                              {savingReport ? 'Saving...' : '✓ Save'}
+                            </button>
+                            <button onClick={() => { setEditingReportId(null); setReportEditForm({}) }}
+                              style={{ background: 'transparent', border: '1px solid #1C2A3A', color: '#7A90A8', borderRadius: '6px', padding: '7px 14px', fontSize: '11px', cursor: 'pointer' }}>
+                              Cancel
+                            </button>
+                          </div>
                         </div>
                       )}
                     </div>
                   )
                 })}
+
                 {totalPages > 1 && (
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderTop: '1px solid #1C2A3A' }}>
                     <span style={{ fontSize: '11px', color: '#3D5068' }}>
@@ -585,13 +670,9 @@ export default function AgentProfilePage({ params }: { params: { id: string } })
             </button>
           </div>
           {coaching.length > 0 ? coaching.map((note: string, i: number) => (
-            <div key={i} style={{ padding: '12px', background: '#111820', borderRadius: '8px', marginBottom: '8px', fontSize: '12px', color: '#7A90A8', lineHeight: '1.6' }}>
-              {note}
-            </div>
+            <div key={i} style={{ padding: '12px', background: '#111820', borderRadius: '8px', marginBottom: '8px', fontSize: '12px', color: '#7A90A8', lineHeight: '1.6' }}>{note}</div>
           )) : (
-            <div style={{ textAlign: 'center', color: '#3D5068', fontSize: '12px', padding: '20px' }}>
-              No coaching sessions recorded yet. Add one above.
-            </div>
+            <div style={{ textAlign: 'center', color: '#3D5068', fontSize: '12px', padding: '20px' }}>No coaching sessions recorded yet.</div>
           )}
         </div>
       )}
