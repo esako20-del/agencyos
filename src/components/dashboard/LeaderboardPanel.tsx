@@ -27,7 +27,7 @@ export default function LeaderboardPanel({ entries }: { entries: any[] }) {
   useEffect(() => {
     async function load() {
       try {
-        const res = await fetch('/api/agentscoreboard')
+        const res = await fetch('/api/agentscoreboard', { cache: 'no-store' })
         const { data } = await res.json()
         if (data) {
           setAgents(
