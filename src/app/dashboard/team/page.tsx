@@ -48,7 +48,7 @@ export default function TeamPage() {
   async function loadAgents() {
     setLoading(true)
     try {
-      const res = await fetch('/api/agentscoreboard')
+      const res = await fetch('/api/agentscoreboard', { cache: 'no-store' })
       const { data } = await res.json()
       if (data) setAgents(data)
     } catch (e) {}
