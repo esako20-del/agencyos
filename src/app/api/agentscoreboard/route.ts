@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 
-// ─── Eastern Time helpers  ─────────────────────────────────────────────────────
+// ─── Eastern Time helpers ─────────────────────────────────────────────────────
 function getETNow(): Date {
   const nowUTC = new Date()
   const etOffset = -4 // EDT (UTC-4). Change to -5 in winter.
