@@ -11,21 +11,12 @@ const TIER_COLORS: Record<string, string> = {
 }
 
 const TIER_LABELS: Record<string, string> = {
-  s_tier: 'S Tier',
-  a_tier: 'A Tier',
-  b_tier: 'B Tier',
-  c_tier: 'C Tier',
-  t_tier: 'T Tier',
-  i_tier: 'I Tier',
-}
-
-const TIER_DESC: Record<string, string> = {
-  s_tier: '$150K+ ALP',
-  a_tier: '$100K–$150K ALP',
-  b_tier: '$50K–$100K ALP',
-  c_tier: '$35K–$50K ALP',
-  t_tier: 'In Training',
-  i_tier: 'Inactive',
+  s_tier: 'S',
+  a_tier: 'A',
+  b_tier: 'B',
+  c_tier: 'C',
+  t_tier: 'T',
+  i_tier: 'I',
 }
 
 const AGENT_IDS: Record<string, string> = {
@@ -33,151 +24,264 @@ const AGENT_IDS: Record<string, string> = {
   'Ardit M.': '5', 'Adrian B.': '6', 'Dayell F.': '7',
   'Kelsey S.': '9', 'Edlira S.': '10', 'Matthew H.': '11', 'Drew C.': '12',
   'Nadirah M.': '13', 'Tiffany S.': '14', 'Jorge R.': '15', 'Alyssa H.': '16',
-  'Llambi T.': '17', 'Endi A.': '18', 'Enri S.': '20','Bruno N.': '21',
+  'Llambi T.': '17', 'Endi A.': '18', 'Enri S.': '20', 'Bruno N.': '21',
 }
 
-const TABS = [
-  { label: 'All', value: 'all' },
-  { label: 'S Tier', value: 's_tier' },
-  { label: 'A Tier', value: 'a_tier' },
-  { label: 'B Tier', value: 'b_tier' },
-  { label: 'C Tier', value: 'c_tier' },
-  { label: 'T Tier', value: 't_tier' },
-  { label: 'I Tier', value: 'i_tier' },
-]
+const RANK_COLORS = ['#F59E0B', '#94A3B8', '#B45309']
+
+type SortKey = 'ytd' | 'month' | 'week'
+
+function fmt(val: number) {
+  if (val === 0) return '—'
+  if (val >= 1000) return `$${(val / 1000).toFixed(1)}K`
+  return `$${val}`
+}
 
 export default function TeamPage() {
-  const [filter, setFilter] = useState('all')
-  const [agents, setAgents] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
+  const [agents, setAgents]     = useState<any[]>([])
+  const [loading, setLoading]   = useState(true)
+  const [sortKey, setSortKey]   = useState<SortKey>('ytd')
+  const [showAdd, setShowAdd]   = useState(false)
+  const [newAgent, setNewAgent] = useState({ full_name: '', tier: 'c_tier' })
+  const [adding, setAdding]     = useState(false)
+  const [addMsg, setAddMsg]     = useState('')
 
-  useEffect(() => {
-    async function loadAgents() {
-      try {
-        const res = await fetch('/api/agents')
-        const { data } = await res.json()
-        if (data) setAgents(data)
-      } catch (e) {}
-      setLoading(false)
+  useEffect(() => { loadAgents() }, [])
+
+  async function loadAgents() {
+    setLoading(true)
+    try {
+      const res = await fetch('/api/agentscoreboard')
+      const { data } = await res.json()
+      if (data) setAgents(data)
+    } catch (e) {}
+    setLoading(false)
+  }
+
+  // Sort agents by selected key
+  const sorted = [...agents].sort((a, b) => {
+    if (sortKey === 'ytd')   return b.ytdAlp   - a.ytdAlp
+    if (sortKey === 'month') return b.monthAlp - a.monthAlp
+    if (sortKey === 'week')  return b.weekAlp  - a.weekAlp
+    return 0
+  })
+
+  const topValue = sorted[0]?.[sortKey === 'ytd' ? 'ytdAlp' : sortKey === 'month' ? 'monthAlp' : 'weekAlp'] || 1
+
+  async function handleAddAgent() {
+    if (!newAgent.full_name.trim()) return
+    setAdding(true)
+    try {
+      const res = await fetch('/api/agents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          full_name:   newAgent.full_name.trim(),
+          tier:        newAgent.tier,
+          is_active:   true,
+          monthly_alp: [0,0,0,0,0,0,0,0,0,0,0,0],
+          health_status: 'yellow',
+        }),
+      })
+      const { error } = await res.json()
+      if (error) throw new Error(error)
+      setAddMsg('✓ Agent added!')
+      setNewAgent({ full_name: '', tier: 'c_tier' })
+      setShowAdd(false)
+      setTimeout(() => setAddMsg(''), 3000)
+      loadAgents()
+    } catch (e: any) {
+      setAddMsg('Error: ' + e.message)
     }
-    loadAgents()
-  }, [])
+    setAdding(false)
+  }
 
-  const filtered = filter === 'all' ? agents : agents.filter(a => a.tier === filter)
-  const topYtd = Math.max(...agents.map(a => a.ytd_alp || 0), 1)
+  const inputStyle = {
+    background: '#07090D', border: '1px solid #1C2A3A', borderRadius: '6px',
+    padding: '7px 10px', color: '#ECF0F5', fontSize: '12px', outline: 'none',
+    width: '100%', boxSizing: 'border-box' as const,
+  }
 
   if (loading) return (
     <div style={{ padding: '40px', textAlign: 'center', color: '#7A90A8', fontFamily: 'system-ui' }}>
-      Loading team data...
+      Loading scoreboard...
     </div>
   )
 
   return (
     <div style={{ fontFamily: 'system-ui, sans-serif', color: '#ECF0F5' }}>
 
-      {/* Tier legend */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
-        {Object.keys(TIER_LABELS).map(tier => (
-          <div key={tier} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#0C1018', border: `1px solid ${TIER_COLORS[tier]}44`, borderRadius: '6px', padding: '5px 10px' }}>
-            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: TIER_COLORS[tier] }} />
-            <span style={{ fontSize: '11px', fontWeight: '700', color: TIER_COLORS[tier] }}>{TIER_LABELS[tier]}</span>
-            <span style={{ fontSize: '10px', color: '#3D5068' }}>{TIER_DESC[tier]}</span>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+        <div>
+          <div style={{ fontSize: '18px', fontWeight: '700' }}>Team Scoreboard</div>
+          <div style={{ fontSize: '12px', color: '#7A90A8', marginTop: '2px' }}>{agents.length} agents · Ranked by ALP production</div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {addMsg && (
+            <span style={{ fontSize: '12px', color: addMsg.startsWith('Error') ? '#EF4444' : '#00E5A0' }}>{addMsg}</span>
+          )}
+          <button
+            onClick={() => setShowAdd(!showAdd)}
+            style={{ background: '#00E5A0', color: '#000', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}
+          >
+            + Add Agent
+          </button>
+        </div>
+      </div>
+
+      {/* Add Agent Form */}
+      {showAdd && (
+        <div style={{ background: '#0C1018', border: '1px solid #00E5A044', borderRadius: '12px', padding: '16px', marginBottom: '16px' }}>
+          <div style={{ fontSize: '11px', color: '#00E5A0', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '12px', fontWeight: '700' }}>
+            New Agent
           </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '10px', alignItems: 'end' }}>
+            <div>
+              <div style={{ fontSize: '9px', color: '#3D5068', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>Full Name</div>
+              <input
+                style={inputStyle}
+                placeholder="First Last"
+                value={newAgent.full_name}
+                onChange={e => setNewAgent(n => ({ ...n, full_name: e.target.value }))}
+              />
+            </div>
+            <div>
+              <div style={{ fontSize: '9px', color: '#3D5068', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>Tier</div>
+              <select
+                style={inputStyle}
+                value={newAgent.tier}
+                onChange={e => setNewAgent(n => ({ ...n, tier: e.target.value }))}
+              >
+                <option value="s_tier">S Tier</option>
+                <option value="a_tier">A Tier</option>
+                <option value="b_tier">B Tier</option>
+                <option value="c_tier">C Tier</option>
+                <option value="t_tier">T Tier (Training)</option>
+                <option value="i_tier">I Tier (Inactive)</option>
+              </select>
+            </div>
+            <button
+              onClick={handleAddAgent}
+              disabled={adding}
+              style={{ background: '#00E5A0', color: '#000', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '11px', fontWeight: '700', cursor: 'pointer', whiteSpace: 'nowrap' }}
+            >
+              {adding ? 'Adding...' : 'Save Agent'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Sort Toggle */}
+      <div style={{ display: 'flex', gap: '2px', background: '#111820', border: '1px solid #1C2A3A', padding: '3px', borderRadius: '8px', width: 'fit-content', marginBottom: '16px' }}>
+        {([
+          { key: 'ytd',   label: 'YTD Ranking' },
+          { key: 'month', label: 'This Month' },
+          { key: 'week',  label: 'This Week' },
+        ] as { key: SortKey; label: string }[]).map(t => (
+          <button key={t.key} onClick={() => setSortKey(t.key)} style={{
+            padding: '6px 14px', borderRadius: '5px', fontSize: '11px', fontWeight: '600',
+            cursor: 'pointer', border: 'none',
+            background: sortKey === t.key ? '#0C1018' : 'transparent',
+            color: sortKey === t.key ? '#ECF0F5' : '#7A90A8',
+          }}>
+            {t.label}
+          </button>
         ))}
       </div>
 
-      {/* Filter tabs + Add button */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
-        <div style={{ display: 'flex', gap: '2px', background: '#111820', border: '1px solid #1C2A3A', padding: '3px', borderRadius: '8px', flexWrap: 'wrap' }}>
-          {TABS.map(t => (
-            <button key={t.value} onClick={() => setFilter(t.value)} style={{
-              padding: '6px 10px', borderRadius: '5px', fontSize: '11px', fontWeight: '600',
-              cursor: 'pointer', border: 'none',
-              background: filter === t.value ? '#0C1018' : 'transparent',
-              color: filter === t.value ? '#ECF0F5' : '#7A90A8',
-            }}>
-              {t.label} {t.value === 'all' ? `(${agents.length})` : `(${agents.filter(a => a.tier === t.value).length})`}
-            </button>
+      {/* Scoreboard Table */}
+      <div style={{ background: '#0C1018', border: '1px solid #1C2A3A', borderRadius: '12px', overflow: 'hidden' }}>
+        {/* Table Header */}
+        <div style={{ display: 'grid', gridTemplateColumns: '40px 1fr 100px 100px 100px 100px 100px 100px 80px', gap: '0', padding: '10px 16px', background: '#111820', borderBottom: '1px solid #1C2A3A' }}>
+          {['#', 'Agent', 'YTD ALP', 'Month ALP', 'Week ALP', 'Ref YTD', 'Ref Month', 'Ref Week', 'Close %'].map(h => (
+            <div key={h} style={{ fontSize: '9px', color: '#3D5068', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: '600' }}>{h}</div>
           ))}
         </div>
-        <button style={{ background: '#00E5A0', color: '#000', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}>
-          + Add Agent
-        </button>
-      </div>
 
-      {/* Table */}
-      <div style={{ background: '#0C1018', border: '1px solid #1C2A3A', borderRadius: '12px', overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ background: '#111820' }}>
-              {['Agent', 'Tier', 'YTD ALP', 'This Month', 'Close %', 'Sits', 'Refs', 'Streak', 'Health'].map(h => (
-                <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontSize: '9px', color: '#3D5068', textTransform: 'uppercase', letterSpacing: '1.2px', borderBottom: '1px solid #1C2A3A', fontWeight: '500' }}>
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map(agent => {
-              const ytd = agent.ytd_alp || 0
-              const month = agent.month_alp || 0
-              const close = agent.close_rate || 0
-              const sits = agent.avg_daily_sits || 0
-              const refs = agent.refs_per_sale || 0
-              const streak = agent.streak_days || 0
-              const health = agent.health_status || 'yellow'
-              const pct = Math.round((ytd / topYtd) * 100)
-              const tierColor = TIER_COLORS[agent.tier] || '#7A90A8'
-              const tierLabel = TIER_LABELS[agent.tier] || agent.tier
-              const healthColor = health === 'green' ? '#00E5A0' : health === 'yellow' ? '#F59E0B' : '#EF4444'
-              const closeColor = close >= 45 ? '#00E5A0' : close >= 30 ? '#F59E0B' : '#EF4444'
-              const initials = agent.full_name.split(' ').map((n: string) => n[0]).join('').slice(0, 2)
-              const agentId = AGENT_IDS[agent.full_name] || '1'
+        {/* Rows */}
+        {sorted.map((agent, i) => {
+          const tierColor  = TIER_COLORS[agent.tier] || '#7A90A8'
+          const tierLabel  = TIER_LABELS[agent.tier] || '?'
+          const rankColor  = i < 3 ? RANK_COLORS[i] : '#3D5068'
+          const agentId    = AGENT_IDS[agent.full_name] || '1'
+          const initials   = agent.full_name.split(' ').map((n: string) => n[0]).join('').slice(0, 2)
+          const sortValue  = sortKey === 'ytd' ? agent.ytdAlp : sortKey === 'month' ? agent.monthAlp : agent.weekAlp
+          const barPct     = Math.round((sortValue / topValue) * 100)
+          const closeColor = agent.closeRatio >= 45 ? '#00E5A0' : agent.closeRatio >= 30 ? '#F59E0B' : agent.closeRatio > 0 ? '#EF4444' : '#3D5068'
 
-              return (
-                <tr key={agent.id}
-                  onClick={() => window.location.href = `/dashboard/team/${agentId}`}
-                  style={{ cursor: 'pointer', borderBottom: '1px solid rgba(28,42,58,0.5)' }}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.015)')}
-                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                >
-                  <td style={{ padding: '10px 12px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: `${tierColor}22`, color: tierColor, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: '700', flexShrink: 0 }}>
-                        {initials}
-                      </div>
-                      <div>
-                        <div style={{ fontSize: '12px', fontWeight: '600' }}>{agent.full_name}</div>
-                        <div style={{ fontSize: '10px', color: '#3D5068' }}>{tierLabel}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td style={{ padding: '10px 12px' }}>
-                    <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: '4px', fontSize: '10px', fontWeight: '700', background: `${tierColor}22`, color: tierColor, border: `1px solid ${tierColor}44` }}>
+          return (
+            <div
+              key={agent.id}
+              onClick={() => window.location.href = `/dashboard/team/${agentId}`}
+              style={{ display: 'grid', gridTemplateColumns: '40px 1fr 100px 100px 100px 100px 100px 100px 80px', gap: '0', padding: '12px 16px', borderBottom: '1px solid rgba(28,42,58,0.5)', cursor: 'pointer', transition: 'background 0.1s' }}
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.015)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+            >
+              {/* Rank */}
+              <div style={{ fontSize: '14px', fontWeight: '700', color: rankColor, display: 'flex', alignItems: 'center' }}>
+                {i + 1}
+              </div>
+
+              {/* Agent Name */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ width: '30px', height: '30px', borderRadius: '8px', background: `${tierColor}22`, color: tierColor, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '700', flexShrink: 0 }}>
+                  {initials}
+                </div>
+                <div>
+                  <div style={{ fontSize: '13px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    {agent.full_name}
+                    {!agent.is_active && (
+                      <span style={{ fontSize: '9px', color: '#3D5068', background: '#1C2A3A', padding: '1px 6px', borderRadius: '4px' }}>Inactive</span>
+                    )}
+                    <span style={{ fontSize: '9px', fontWeight: '700', color: tierColor, background: `${tierColor}22`, padding: '1px 6px', borderRadius: '4px', border: `1px solid ${tierColor}33` }}>
                       {tierLabel}
                     </span>
-                  </td>
-                  <td style={{ padding: '10px 12px' }}>
-                    <div style={{ fontSize: '12px', color: '#00E5A0', fontWeight: '600' }}>{ytd > 0 ? `$${(ytd/1000).toFixed(0)}K` : '—'}</div>
-                    <div style={{ width: '80px', height: '3px', background: '#16202C', borderRadius: '2px', marginTop: '4px', overflow: 'hidden' }}>
-                      <div style={{ width: `${pct}%`, height: '100%', background: tierColor, borderRadius: '2px' }} />
-                    </div>
-                  </td>
-                  <td style={{ padding: '10px 12px', fontSize: '12px', color: '#60A5FA', fontWeight: '500' }}>{month > 0 ? `$${(month/1000).toFixed(1)}K` : '—'}</td>
-                  <td style={{ padding: '10px 12px', fontSize: '12px', color: close > 0 ? closeColor : '#3D5068' }}>{close > 0 ? `${close}%` : '—'}</td>
-                  <td style={{ padding: '10px 12px', fontSize: '12px', color: '#7A90A8' }}>{sits > 0 ? sits : '—'}</td>
-                  <td style={{ padding: '10px 12px', fontSize: '12px', color: '#7A90A8' }}>{refs > 0 ? refs : '—'}</td>
-                  <td style={{ padding: '10px 12px', fontSize: '12px', color: streak > 0 ? '#00E5A0' : '#EF4444' }}>
-                    {streak > 0 ? `🔥 ${streak}d` : '—'}
-                  </td>
-                  <td style={{ padding: '10px 12px' }}>
-                    <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: healthColor, boxShadow: `0 0 5px ${healthColor}` }} />
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
+                  </div>
+                  {/* Progress bar based on sort key */}
+                  <div style={{ width: '100px', height: '3px', background: '#16202C', borderRadius: '2px', marginTop: '5px', overflow: 'hidden' }}>
+                    <div style={{ width: `${barPct}%`, height: '100%', background: tierColor, borderRadius: '2px', transition: 'width 0.3s' }} />
+                  </div>
+                </div>
+              </div>
+
+              {/* YTD ALP */}
+              <div style={{ fontSize: '13px', fontWeight: '600', color: sortKey === 'ytd' ? '#00E5A0' : '#ECF0F5', display: 'flex', alignItems: 'center' }}>
+                {fmt(agent.ytdAlp)}
+              </div>
+
+              {/* Month ALP */}
+              <div style={{ fontSize: '13px', color: sortKey === 'month' ? '#60A5FA' : '#7A90A8', display: 'flex', alignItems: 'center' }}>
+                {fmt(agent.monthAlp)}
+              </div>
+
+              {/* Week ALP */}
+              <div style={{ fontSize: '13px', color: sortKey === 'week' ? '#A78BFA' : '#7A90A8', display: 'flex', alignItems: 'center' }}>
+                {fmt(agent.weekAlp)}
+              </div>
+
+              {/* Ref YTD */}
+              <div style={{ fontSize: '12px', color: '#7A90A8', display: 'flex', alignItems: 'center' }}>
+                {fmt(agent.ytdRefAlp)}
+              </div>
+
+              {/* Ref Month */}
+              <div style={{ fontSize: '12px', color: '#7A90A8', display: 'flex', alignItems: 'center' }}>
+                {fmt(agent.monthRefAlp)}
+              </div>
+
+              {/* Ref Week */}
+              <div style={{ fontSize: '12px', color: '#7A90A8', display: 'flex', alignItems: 'center' }}>
+                {fmt(agent.weekRefAlp)}
+              </div>
+
+              {/* Close % */}
+              <div style={{ fontSize: '13px', fontWeight: '600', color: closeColor, display: 'flex', alignItems: 'center' }}>
+                {agent.closeRatio > 0 ? `${agent.closeRatio}%` : '—'}
+              </div>
+            </div>
+          )
+        })}
       </div>
     </div>
   )
