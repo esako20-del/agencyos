@@ -72,6 +72,8 @@ function calcRatios(data: any, alp: number) {
 
 // ─── Main Handler ─────────────────────────────────────────────────────────────
 export async function GET() {
+  export async function GET() {
+  const headers = { 'Cache-Control': 'no-store, no-cache, must-revalidate' }
   const { todayStr, yesterdayStr, weekStartStr, monthStartStr, yearStartStr, currentMonth } = getDateRanges()
 
   // Fetch all agents with their monthly_alp
