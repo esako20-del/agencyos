@@ -62,33 +62,31 @@ function formatDate(dateStr: string) {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-// Get current month index in ET (0=Jan)
 function getCurrentMonthET(): number {
   const etOffset = -4
   const etDate = new Date(new Date().getTime() + etOffset * 60 * 60 * 1000)
   return etDate.getUTCMonth()
 }
 
+function getMonthIndex(dateStr: string): number {
+  return parseInt(dateStr.substring(5, 7)) - 1
+}
+
 export default function AgentProfilePage({ params }: { params: { id: string } }) {
   const base = AGENT_NAMES[params.id]
   const currentMonth = getCurrentMonthET()
 
-  // Agent data
-  const [agentUUID, setAgentUUID] = useState('')
-  const [agentData, setAgentData] = useState<any>(null)
-  const [loading, setLoading]     = useState(true)
-
-  // Historical monthly ALP (from monthly_alp array)
+  const [agentUUID, setAgentUUID]   = useState('')
+  const [agentData, setAgentData]   = useState<any>(null)
+  const [loading, setLoading]       = useState(true)
   const [monthlyALP, setMonthlyALP] = useState<number[]>([0,0,0,0,0,0,0,0,0,0,0,0])
 
-  // JotForm calculated header stats
-  const [jotYTD, setJotYTD]       = useState(0)
-  const [jotMonth, setJotMonth]   = useState(0)
-  const [jotClose, setJotClose]   = useState(0)
-  const [jotStreak, setJotStreak] = useState(0)
-  const [jotLoaded, setJotLoaded] = useState(false)
+  // Raw JotForm ALP broken down by month (0-11)
+  const [jotAlpByMonth, setJotAlpByMonth] = useState<number[]>(Array(12).fill(0))
+  const [jotClose, setJotClose]           = useState(0)
+  const [jotStreak, setJotStreak]         = useState(0)
+  const [jotLoaded, setJotLoaded]         = useState(false)
 
-  // Activity tab
   const [reports, setReports]               = useState<DailyReport[]>([])
   const [reportStats, setReportStats]       = useState<ReportStats | null>(null)
   const [reportTotal, setReportTotal]       = useState(0)
@@ -96,13 +94,11 @@ export default function AgentProfilePage({ params }: { params: { id: string } })
   const [reportsLoading, setReportsLoading] = useState(false)
   const [expandedRow, setExpandedRow]       = useState<string | null>(null)
 
-  // Inline report editing
   const [editingReportId, setEditingReportId] = useState<string | null>(null)
   const [reportEditForm, setReportEditForm]   = useState<Partial<DailyReport>>({})
   const [savingReport, setSavingReport]       = useState(false)
   const [reportSaveMsg, setReportSaveMsg]     = useState('')
 
-  // UI
   const [activeTab, setActiveTab]       = useState('overview')
   const [editing, setEditing]           = useState(false)
   const [editForm, setEditForm]         = useState<any>({})
@@ -110,7 +106,7 @@ export default function AgentProfilePage({ params }: { params: { id: string } })
   const [savedMessage, setSavedMessage] = useState('')
   const [coachingNote, setCoachingNote] = useState('')
 
-  // Step 1: Load agent
+  // Load agent from agents table
   useEffect(() => {
     if (!base) { setLoading(false); return }
     async function loadAgent() {
@@ -123,13 +119,13 @@ export default function AgentProfilePage({ params }: { params: { id: string } })
           setMonthlyALP(monthly)
           setAgentData(data)
           setEditForm({
-            sits:    data.avg_daily_sits  || 0,
-            dials:   data.avg_daily_dials || 0,
-            refs:    data.refs_per_sale   || 0,
-            health:  data.health_status   || 'yellow',
-            leads:   data.lead_types_text || 'New Pack',
-            monthly: [...monthly],
-            coaching: data.coaching_notes || [],
+            sits:     data.avg_daily_sits  || 0,
+            dials:    data.avg_daily_dials || 0,
+            refs:     data.refs_per_sale   || 0,
+            health:   data.health_status   || 'yellow',
+            leads:    data.lead_types_text || 'New Pack',
+            monthly:  [...monthly],
+            coaching: data.coaching_notes  || [],
           })
         }
       } catch (e) { console.error(e) }
@@ -138,7 +134,7 @@ export default function AgentProfilePage({ params }: { params: { id: string } })
     loadAgent()
   }, [params.id])
 
-  // Step 2: Load JotForm stats for header
+  // Load JotForm stats — break down ALP by month
   useEffect(() => {
     if (!agentUUID) return
     async function loadJotFormStats() {
@@ -150,24 +146,23 @@ export default function AgentProfilePage({ params }: { params: { id: string } })
         const all: DailyReport[] = json.reports
         const etOffset = -4
         const etNow    = new Date(new Date().getTime() + etOffset * 60 * 60 * 1000)
-        const thisYear  = etNow.getUTCFullYear()
-        const thisMonth = etNow.getUTCMonth()
+        const thisYear = etNow.getUTCFullYear()
 
-        const ytd = all
-          .filter(r => new Date(r.report_date + 'T00:00:00').getFullYear() === thisYear)
-          .reduce((s, r) => s + (r.alp_written || 0), 0)
+        // Break JotForm ALP down by month
+        const alpByMonth: number[] = Array(12).fill(0)
+        for (const r of all) {
+          if (new Date(r.report_date + 'T00:00:00').getFullYear() === thisYear) {
+            alpByMonth[getMonthIndex(r.report_date)] += r.alp_written || 0
+          }
+        }
+        setJotAlpByMonth(alpByMonth)
 
-        const month = all
-          .filter(r => {
-            const d = new Date(r.report_date + 'T00:00:00')
-            return d.getFullYear() === thisYear && d.getMonth() === thisMonth
-          })
-          .reduce((s, r) => s + (r.alp_written || 0), 0)
-
+        // Close rate from JotForm
         const totalSits  = all.reduce((s, r) => s + (r.sits  || 0), 0)
         const totalSales = all.reduce((s, r) => s + (r.sales || 0), 0)
-        const close = totalSits > 0 ? Math.round((totalSales / totalSits) * 100) : 0
+        setJotClose(totalSits > 0 ? Math.round((totalSales / totalSits) * 100) : 0)
 
+        // Day streak
         const saleDates = new Set(all.filter(r => (r.sales || 0) > 0).map(r => r.report_date))
         let streak = 0
         const check = new Date(new Date().getTime() + etOffset * 60 * 60 * 1000)
@@ -176,10 +171,6 @@ export default function AgentProfilePage({ params }: { params: { id: string } })
           if (saleDates.has(ds)) { streak++; check.setUTCDate(check.getUTCDate() - 1) }
           else break
         }
-
-        setJotYTD(ytd)
-        setJotMonth(month)
-        setJotClose(close)
         setJotStreak(streak)
         setJotLoaded(true)
       } catch (e) { console.error(e); setJotLoaded(true) }
@@ -187,7 +178,6 @@ export default function AgentProfilePage({ params }: { params: { id: string } })
     loadJotFormStats()
   }, [agentUUID])
 
-  // Step 3: Load paginated reports for Activity tab
   const loadReports = useCallback(async (page: number) => {
     if (!agentUUID) return
     setReportsLoading(true)
@@ -208,16 +198,23 @@ export default function AgentProfilePage({ params }: { params: { id: string } })
     if (activeTab === 'activity' && agentUUID) loadReports(reportPage)
   }, [activeTab, reportPage, agentUUID])
 
-  // Header display values
-  // Historical: sum of monthly_alp for past months + current month manual entry
-  const historicalYTD   = monthlyALP.slice(0, currentMonth).reduce((s, v) => s + (v || 0), 0)
-  const historicalMonth = monthlyALP[currentMonth] || 0
-  const displayYTD      = historicalYTD + historicalMonth + jotYTD
-  const displayMonth    = historicalMonth + jotMonth
-  const displayClose    = jotClose
-  const displayStreak   = jotStreak
+  // ── Header display values ──────────────────────────────────────────────────
+  // Rule: if manual entry > 0 for a month → use manual, ignore JotForm for that month
+  //       if manual entry = 0 → use JotForm for that month
+  // This applies to ALP only. Ratios always come from JotForm.
 
-  // Save report edit
+  // Calculate final ALP per month using the override rule
+  const finalAlpByMonth = Array(12).fill(0).map((_, i) => {
+    if (i > currentMonth) return 0
+    const manual = monthlyALP[i] || 0
+    return manual > 0 ? manual : (jotAlpByMonth[i] || 0)
+  })
+
+  const displayYTD    = finalAlpByMonth.reduce((s, v) => s + v, 0)
+  const displayMonth  = finalAlpByMonth[currentMonth]
+  const displayClose  = jotClose
+  const displayStreak = jotStreak
+
   async function saveReportEdit() {
     if (!editingReportId) return
     setSavingReport(true)
@@ -234,19 +231,24 @@ export default function AgentProfilePage({ params }: { params: { id: string } })
       setEditingReportId(null)
       setReportEditForm({})
       loadReports(reportPage)
+      // Reload JotForm stats
       setJotLoaded(false)
       const statsRes  = await fetch(`/api/reports?agent_id=${agentUUID}&limit=1000&offset=0`)
       const statsJson = await statsRes.json()
       if (statsJson.reports?.length > 0) {
         const all = statsJson.reports
         const etOffset = -4
-        const etNow = new Date(new Date().getTime() + etOffset * 60 * 60 * 1000)
-        const ytd = all.filter((r: DailyReport) => new Date(r.report_date + 'T00:00:00').getFullYear() === etNow.getUTCFullYear()).reduce((s: number, r: DailyReport) => s + (r.alp_written || 0), 0)
-        const month = all.filter((r: DailyReport) => { const d = new Date(r.report_date + 'T00:00:00'); return d.getFullYear() === etNow.getUTCFullYear() && d.getMonth() === etNow.getUTCMonth() }).reduce((s: number, r: DailyReport) => s + (r.alp_written || 0), 0)
+        const etNow    = new Date(new Date().getTime() + etOffset * 60 * 60 * 1000)
+        const thisYear = etNow.getUTCFullYear()
+        const newAlpByMonth: number[] = Array(12).fill(0)
+        for (const r of all) {
+          if (new Date(r.report_date + 'T00:00:00').getFullYear() === thisYear) {
+            newAlpByMonth[getMonthIndex(r.report_date)] += r.alp_written || 0
+          }
+        }
+        setJotAlpByMonth(newAlpByMonth)
         const ts  = all.reduce((s: number, r: DailyReport) => s + (r.sits  || 0), 0)
         const tsa = all.reduce((s: number, r: DailyReport) => s + (r.sales || 0), 0)
-        setJotYTD(ytd)
-        setJotMonth(month)
         setJotClose(ts > 0 ? Math.round((tsa / ts) * 100) : 0)
       }
       setJotLoaded(true)
@@ -257,7 +259,6 @@ export default function AgentProfilePage({ params }: { params: { id: string } })
     setSavingReport(false)
   }
 
-  // Save agent edit
   async function handleSave() {
     setSaving(true)
     try {
@@ -410,16 +411,12 @@ export default function AgentProfilePage({ params }: { params: { id: string } })
       {editing && (
         <div style={{ background: '#0C1018', border: '1px solid #00E5A044', borderRadius: '12px', padding: '20px', marginBottom: '16px' }}>
           <div style={{ fontSize: '11px', color: '#00E5A0', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '4px', fontWeight: '700' }}>✏️ Editing — {base.name}</div>
-          <div style={{ fontSize: '10px', color: '#3D5068', marginBottom: '16px' }}>JotForm data is added on top of historical entries automatically.</div>
+          <div style={{ fontSize: '10px', color: '#3D5068', marginBottom: '16px' }}>
+            If you enter ALP for a month, it overrides JotForm for that month. Leave as 0 to use JotForm data.
+          </div>
 
-          {/* Historical ALP by month */}
           <div style={{ marginBottom: '16px' }}>
-            <div style={{ fontSize: '10px', color: '#00E5A0', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: '700', marginBottom: '10px' }}>
-              📅 Historical ALP by Month
-            </div>
-            <div style={{ fontSize: '10px', color: '#3D5068', marginBottom: '10px' }}>
-              Enter total ALP for each month. For the current month, enter only the pre-JotForm portion (e.g. Jun 1–14). Leave future months as 0.
-            </div>
+            <div style={{ fontSize: '10px', color: '#00E5A0', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: '700', marginBottom: '10px' }}>📅 Monthly ALP — Manual Entry</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
               {MONTHS.map((month, i) => {
                 const isCurrent = i === currentMonth
@@ -430,16 +427,9 @@ export default function AgentProfilePage({ params }: { params: { id: string } })
                       <span>{month}</span>
                       {isCurrent && <span style={{ color: '#00E5A0' }}>Current</span>}
                     </div>
-                    <input
-                      type="number"
-                      style={{
-                        ...smallInputStyle,
-                        border: isCurrent ? '1px solid #00E5A044' : '1px solid #1C2A3A',
-                        opacity: isFuture ? 0.3 : 1,
-                        background: isCurrent ? 'rgba(0,229,160,0.05)' : '#07090D',
-                      }}
+                    <input type="number" disabled={isFuture}
+                      style={{ ...smallInputStyle, border: isCurrent ? '1px solid #00E5A044' : '1px solid #1C2A3A', opacity: isFuture ? 0.3 : 1, background: isCurrent ? 'rgba(0,229,160,0.05)' : '#07090D' }}
                       value={editForm.monthly[i] || 0}
-                      disabled={isFuture}
                       onChange={e => {
                         const updated = [...editForm.monthly]
                         updated[i] = parseInt(e.target.value) || 0
@@ -451,14 +441,11 @@ export default function AgentProfilePage({ params }: { params: { id: string } })
               })}
             </div>
             <div style={{ marginTop: '10px', padding: '8px 12px', background: '#111820', borderRadius: '6px', fontSize: '11px', color: '#7A90A8', display: 'flex', justifyContent: 'space-between' }}>
-              <span>Historical Total:</span>
-              <span style={{ color: '#00E5A0', fontWeight: '700' }}>
-                ${editForm.monthly.reduce((s: number, v: number) => s + (v || 0), 0).toLocaleString()}
-              </span>
+              <span>Manual Total:</span>
+              <span style={{ color: '#00E5A0', fontWeight: '700' }}>${editForm.monthly.reduce((s: number, v: number) => s + (v || 0), 0).toLocaleString()}</span>
             </div>
           </div>
 
-          {/* Agent details */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
             <div><label style={labelStyle}>Avg Daily Sits</label><input type="number" style={inputStyle} value={editForm.sits} onChange={e => setEditForm((f: any) => ({ ...f, sits: parseInt(e.target.value) || 0 }))} /></div>
             <div><label style={labelStyle}>Avg Daily Dials</label><input type="number" style={inputStyle} value={editForm.dials} onChange={e => setEditForm((f: any) => ({ ...f, dials: parseInt(e.target.value) || 0 }))} /></div>
@@ -560,7 +547,6 @@ export default function AgentProfilePage({ params }: { params: { id: string } })
                     <div key={h} style={{ fontSize: '9px', color: '#3D5068', textTransform: 'uppercase', letterSpacing: '1px' }}>{h}</div>
                   ))}
                 </div>
-
                 {reports.map(report => {
                   const isEditing  = editingReportId === report.id
                   const isExpanded = expandedRow === report.id && !isEditing
@@ -626,7 +612,6 @@ export default function AgentProfilePage({ params }: { params: { id: string } })
                     </div>
                   )
                 })}
-
                 {totalPages > 1 && (
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderTop: '1px solid #1C2A3A' }}>
                     <span style={{ fontSize: '11px', color: '#3D5068' }}>{reportPage * PAGE_SIZE + 1}–{Math.min((reportPage + 1) * PAGE_SIZE, reportTotal)} of {reportTotal} reports</span>
