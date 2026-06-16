@@ -2,9 +2,6 @@ import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 
 // ─── Eastern Time helpers ─────────────────────────────────────────────────────
-// Using fixed offset: EDT = UTC-4 (summer), EST = UTC-5 (winter)
-// Update etOffset to -5 in November when clocks fall back
-
 function getETNow(): Date {
   const nowUTC = new Date()
   const etOffset = -4 // EDT (UTC-4). Change to -5 in winter.
@@ -17,36 +14,34 @@ function toDateStr(d: Date): string {
 
 function getDateRanges() {
   const now = getETNow()
-
-  // Today
   const todayStr = toDateStr(now)
 
-  // Yesterday
   const yesterday = new Date(now)
   yesterday.setUTCDate(yesterday.getUTCDate() - 1)
   const yesterdayStr = toDateStr(yesterday)
 
-  // This week — Monday to today
   const weekStart = new Date(now)
-  const day = weekStart.getUTCDay() // 0 = Sun, 1 = Mon
+  const day = weekStart.getUTCDay()
   const diff = day === 0 ? -6 : 1 - day
   weekStart.setUTCDate(weekStart.getUTCDate() + diff)
   const weekStartStr = toDateStr(weekStart)
 
-  // This month
-  const monthStartStr = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-01`
-  const currentMonth  = now.getUTCMonth() // 0-indexed
+  const currentMonth  = now.getUTCMonth()
+  const currentYear   = now.getUTCFullYear()
+  const monthStartStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`
+  const yearStartStr  = `${currentYear}-01-01`
 
-  // This year
-  const yearStartStr = `${now.getUTCFullYear()}-01-01`
+  return { todayStr, yesterdayStr, weekStartStr, monthStartStr, yearStartStr, currentMonth, currentYear }
+}
 
-  return { todayStr, yesterdayStr, weekStartStr, monthStartStr, yearStartStr, currentMonth }
+// Get the month index (0-11) from a date string like "2026-05-14"
+function getMonthIndex(dateStr: string): number {
+  return parseInt(dateStr.substring(5, 7)) - 1
 }
 
 export async function GET() {
   const { weekStartStr, monthStartStr, yearStartStr, todayStr, currentMonth } = getDateRanges()
 
-  // Fetch all agents
   const { data: agents, error: agentsError } = await supabaseAdmin
     .from('agents')
     .select('id, full_name, tier, is_active, monthly_alp, health_status')
@@ -54,7 +49,6 @@ export async function GET() {
 
   if (agentsError) return NextResponse.json({ error: agentsError.message }, { status: 400 })
 
-  // Fetch all daily reports for this year
   const { data: allReports, error: reportsError } = await supabaseAdmin
     .from('daily_reports')
     .select('agent_id, report_date, alp_written, referral_alp, appointments_set, sits, sales, referral_appointments, referral_sits, referral_sales')
@@ -65,47 +59,53 @@ export async function GET() {
 
   const reports = allReports || []
 
-  // Build per-agent stats
   const agentStats = (agents || []).map(agent => {
     const agentReports = reports.filter(r => r.agent_id === agent.id)
+    const monthly      = agent.monthly_alp || []
 
-    const weekReports  = agentReports.filter(r => r.report_date >= weekStartStr)
-    const monthReports = agentReports.filter(r => r.report_date >= monthStartStr)
-    const ytdReports   = agentReports
+    // ── ALP calculation: manual overrides JotForm per month ──────────────────
+    // For each month 0-11:
+    //   if monthly_alp[i] > 0 → use that as the ALP for that month (ignore JotForm)
+    //   if monthly_alp[i] = 0 → use sum of JotForm reports for that month
 
-    const sumAlp    = (rows: any[]) => rows.reduce((s, r) => s + (Number(r.alp_written)   || 0), 0)
-    const sumRefAlp = (rows: any[]) => rows.reduce((s, r) => s + (Number(r.referral_alp)  || 0), 0)
-    const sumField  = (rows: any[], field: string) => rows.reduce((s, r) => s + (Number(r[field]) || 0), 0)
-
-    // Historical ALP from monthly_alp array
-    const monthly = agent.monthly_alp || []
-    let historicalYTD   = 0
-    let historicalMonth = 0
-    for (let i = 0; i < 12; i++) {
-      const val = Number(monthly[i]) || 0
-      if (i < currentMonth)      historicalYTD   += val
-      else if (i === currentMonth) historicalMonth += val
+    // Group JotForm ALP by month index
+    const jotAlpByMonth: number[] = Array(12).fill(0)
+    for (const r of agentReports) {
+      const mi = getMonthIndex(r.report_date)
+      jotAlpByMonth[mi] += Number(r.alp_written) || 0
     }
 
-    const jotWeekAlp  = sumAlp(weekReports)
-    const jotMonthAlp = sumAlp(monthReports)
-    const jotYtdAlp   = sumAlp(ytdReports)
+    // Build final ALP per month
+    const finalAlpByMonth: number[] = Array(12).fill(0)
+    for (let i = 0; i <= currentMonth; i++) {
+      const manualVal = Number(monthly[i]) || 0
+      finalAlpByMonth[i] = manualVal > 0 ? manualVal : jotAlpByMonth[i]
+    }
 
-    const weekAlp  = jotWeekAlp
-    const monthAlp = jotMonthAlp + historicalMonth
-    const ytdAlp   = jotYtdAlp  + historicalYTD + historicalMonth
+    // YTD ALP = sum of all months up to and including current month
+    const ytdAlp = finalAlpByMonth.reduce((s, v) => s + v, 0)
 
-    const weekRefAlp  = sumRefAlp(weekReports)
-    const monthRefAlp = sumRefAlp(monthReports)
-    const ytdRefAlp   = sumRefAlp(ytdReports)
+    // This Month ALP
+    const monthAlp = finalAlpByMonth[currentMonth]
 
-    const totalAppts = sumField(ytdReports, 'appointments_set')
-    const totalSits  = sumField(ytdReports, 'sits')
-    const totalSales = sumField(ytdReports, 'sales')
+    // This Week ALP — always from JotForm (week doesn't span months cleanly)
+    const weekAlp = agentReports
+      .filter(r => r.report_date >= weekStartStr)
+      .reduce((s, r) => s + (Number(r.alp_written) || 0), 0)
+
+    // ── Referral ALP — always from JotForm ───────────────────────────────────
+    const ytdRefAlp   = agentReports.reduce((s, r) => s + (Number(r.referral_alp) || 0), 0)
+    const monthRefAlp = agentReports.filter(r => r.report_date >= monthStartStr).reduce((s, r) => s + (Number(r.referral_alp) || 0), 0)
+    const weekRefAlp  = agentReports.filter(r => r.report_date >= weekStartStr).reduce((s, r) => s + (Number(r.referral_alp) || 0), 0)
+
+    // ── Ratios — always from JotForm ──────────────────────────────────────────
+    const totalAppts = agentReports.reduce((s, r) => s + (Number(r.appointments_set) || 0), 0)
+    const totalSits  = agentReports.reduce((s, r) => s + (Number(r.sits)             || 0), 0)
+    const totalSales = agentReports.reduce((s, r) => s + (Number(r.sales)            || 0), 0)
     const closeRatio = totalSits  > 0 ? Math.round((totalSales / totalSits)  * 100) : 0
     const showRatio  = totalAppts > 0 ? Math.round((totalSits  / totalAppts) * 100) : 0
 
-    // Day streak — consecutive days with sales > 0 going back from today
+    // ── Day streak ────────────────────────────────────────────────────────────
     const saleDates = new Set(agentReports.filter(r => (r.sales || 0) > 0).map(r => r.report_date))
     let streak    = 0
     const check   = getETNow()
