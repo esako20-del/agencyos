@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
     const struggles    = raw['q15_notes']  || raw['q16_notes']  || ''
 
     // ── Format date ──────────────────────────────────────────────────────────
-    let formattedDate = new Date().toISOString().split('T')[0]
+    const nowET = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' })) let formattedDate = `${nowET.getFullYear()}-${String(nowET.getMonth() + 1).padStart(2, '0')}-${String(nowET.getDate()).padStart(2, '0')}`
     if (dateObj.year && dateObj.month && dateObj.day) {
       formattedDate = `${dateObj.year}-${String(dateObj.month).padStart(2, '0')}-${String(dateObj.day).padStart(2, '0')}`
     }
