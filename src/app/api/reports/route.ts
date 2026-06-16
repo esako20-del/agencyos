@@ -1,6 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 
+// ─── Get current date string in Eastern Time ──────────────────────────────────
+function getETDateString(): string {
+  const now = new Date()
+  const etDate = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }))
+  const y = etDate.getFullYear()
+  const m = String(etDate.getMonth() + 1).padStart(2, '0')
+  const d = String(etDate.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
 // ─── POST: JotForm webhook ────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
   try {
@@ -14,22 +24,24 @@ export async function POST(req: NextRequest) {
 
     const raw = JSON.parse(rawMatch[1])
 
-    // ── Extract fields using confirmed JotForm field IDs ─────────────────────
-    const agentName    = raw['q3_agentName']    || ''
-    const dateObj      = raw['q4_date']         || {}
-    const appointments = parseInt(raw['q6_totalAppointments'] || '0') || 0
-    const sits         = parseInt(raw['q7_totalSits']         || '0') || 0
-    const sales        = parseInt(raw['q8_number8']           || '0') || 0
-    const alp          = parseFloat(raw['q9_number9']         || '0') || 0
-    const refAppts     = parseInt(raw['q10_number10']         || '0') || 0
-    const refSits      = parseInt(raw['q11_number11']         || '0') || 0
-    const refSales     = parseInt(raw['q12_number12']         || '0') || 0
-    const refAlp       = parseFloat(raw['q13_number13']       || '0') || 0
-    const winOfDay     = raw['q14_winOf']  || raw['q15_winOf']  || ''
-    const struggles    = raw['q15_notes']  || raw['q16_notes']  || ''
+    // ── Extract fields using confirmed JotForm field IDs ──────────────────────
+    const agentName = raw['q3_agentName']                        || ''
+    const dateObj   = raw['q4_date']                             || {}
+    const appointments = parseInt(raw['q6_totalAppointments']    || '0') || 0
+    const sits         = parseInt(raw['q7_totalSits']            || '0') || 0
+    const sales        = parseInt(raw['q8_number8']              || '0') || 0
+    const alp          = parseFloat(raw['q9_number9']            || '0') || 0
+    const refAppts     = parseInt(raw['q10_number10']            || '0') || 0
+    const refSits      = parseInt(raw['q11_number11']            || '0') || 0
+    const refSales     = parseInt(raw['q12_number12']            || '0') || 0
+    const refAlp       = parseFloat(raw['q13_number13']          || '0') || 0
+    const winOfDay     = raw['q14_winOf'] || raw['q15_winOf']    || ''
+    const struggles    = raw['q15_notes'] || raw['q16_notes']    || ''
 
-    // ── Format date ──────────────────────────────────────────────────────────
-    const nowET = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' })) let formattedDate = `${nowET.getFullYear()}-${String(nowET.getMonth() + 1).padStart(2, '0')}-${String(nowET.getDate()).padStart(2, '0')}`
+    // ── Format date ───────────────────────────────────────────────────────────
+    // Use the date the agent selected on the form if available
+    // Fall back to today in Eastern Time
+    let formattedDate = getETDateString()
     if (dateObj.year && dateObj.month && dateObj.day) {
       formattedDate = `${dateObj.year}-${String(dateObj.month).padStart(2, '0')}-${String(dateObj.day).padStart(2, '0')}`
     }
@@ -38,7 +50,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Agent name empty' }, { status: 400 })
     }
 
-    // ── Find agent in database ───────────────────────────────────────────────
+    // ── Find agent in database ────────────────────────────────────────────────
     const firstName = agentName.split(' ')[0]
     const { data: agents } = await supabaseAdmin
       .from('agents')
@@ -52,7 +64,7 @@ export async function POST(req: NextRequest) {
 
     const agentId = agents[0].id
 
-    // ── Save to database ─────────────────────────────────────────────────────
+    // ── Save to database ──────────────────────────────────────────────────────
     const { data, error } = await supabaseAdmin
       .from('daily_reports')
       .upsert({
@@ -83,15 +95,15 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// ─── GET: fetch by date (team view) OR by agent_id (agent profile) ───────────
+// ─── GET: fetch by date (team view) OR by agent_id (agent profile) ────────────
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const agentId = searchParams.get('agent_id')
-  const date    = searchParams.get('date') ?? new Date().toISOString().split('T')[0]
+  const date    = searchParams.get('date') ?? getETDateString()
   const limit   = parseInt(searchParams.get('limit') || '30')
   const offset  = parseInt(searchParams.get('offset') || '0')
 
-  // ── Agent profile mode ────────────────────────────────────────────────────
+  // ── Agent profile mode ─────────────────────────────────────────────────────
   if (agentId) {
     const { data: reports, error: reportsError, count } = await supabaseAdmin
       .from('daily_reports')
@@ -131,11 +143,11 @@ export async function GET(req: NextRequest) {
         totalRefSits,
         totalRefSales,
         totalRefALP,
-        showRatio:     totalAppointments > 0 ? parseFloat(((totalSits    / totalAppointments) * 100).toFixed(1)) : 0,
-        closeRatio:    totalSits         > 0 ? parseFloat(((totalSales   / totalSits)         * 100).toFixed(1)) : 0,
-        avgALPPerSale: totalSales        > 0 ? parseFloat((totalALP      / totalSales).toFixed(0))               : 0,
-        refShowRatio:  totalRefAppts     > 0 ? parseFloat(((totalRefSits / totalRefAppts)     * 100).toFixed(1)) : 0,
-        refCloseRatio: totalRefSits      > 0 ? parseFloat(((totalRefSales/ totalRefSits)      * 100).toFixed(1)) : 0,
+        showRatio:     totalAppointments > 0 ? parseFloat(((totalSits     / totalAppointments) * 100).toFixed(1)) : 0,
+        closeRatio:    totalSits         > 0 ? parseFloat(((totalSales    / totalSits)          * 100).toFixed(1)) : 0,
+        avgALPPerSale: totalSales        > 0 ? parseFloat((totalALP       / totalSales).toFixed(0))                : 0,
+        refShowRatio:  totalRefAppts     > 0 ? parseFloat(((totalRefSits  / totalRefAppts)      * 100).toFixed(1)) : 0,
+        refCloseRatio: totalRefSits      > 0 ? parseFloat(((totalRefSales / totalRefSits)       * 100).toFixed(1)) : 0,
       },
       total: count,
       limit,
@@ -143,7 +155,7 @@ export async function GET(req: NextRequest) {
     })
   }
 
-  // ── Team view mode ────────────────────────────────────────────────────────
+  // ── Team view mode ─────────────────────────────────────────────────────────
   const { data, error } = await supabaseAdmin
     .from('daily_reports')
     .select('*, agent:agents(full_name, tier)')
