@@ -5,7 +5,9 @@ import { supabaseAdmin } from '@/lib/supabase'
 
 function getDateRanges() {
   // Use Eastern Time (UTC-4 in summer, UTC-5 in winter)
-  const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }))
+  const nowUTC = new Date()
+const etOffset = -4 // EDT (Eastern Daylight Time, UTC-4). Change to -5 in winter.
+const now = new Date(nowUTC.getTime() + etOffset * 60 * 60 * 1000)
 
   // Yesterday
   const yesterday = new Date(now)
