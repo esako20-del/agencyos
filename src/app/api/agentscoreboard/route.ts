@@ -1,40 +1,46 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 
-function getETDateString(): string {
-  const now = new Date()
-  const etDate = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }))
-  const y = etDate.getFullYear()
-  const m = String(etDate.getMonth() + 1).padStart(2, '0')
-  const d = String(etDate.getDate()).padStart(2, '0')
-  return `${y}-${m}-${d}`
+// ─── Eastern Time helpers ─────────────────────────────────────────────────────
+// Using fixed offset: EDT = UTC-4 (summer), EST = UTC-5 (winter)
+// Update etOffset to -5 in November when clocks fall back
+
+function getETNow(): Date {
+  const nowUTC = new Date()
+  const etOffset = -4 // EDT (UTC-4). Change to -5 in winter.
+  return new Date(nowUTC.getTime() + etOffset * 60 * 60 * 1000)
+}
+
+function toDateStr(d: Date): string {
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`
 }
 
 function getDateRanges() {
-  const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }))
+  const now = getETNow()
+
+  // Today
+  const todayStr = toDateStr(now)
 
   // Yesterday
   const yesterday = new Date(now)
-  yesterday.setDate(yesterday.getDate() - 1)
-  const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`
+  yesterday.setUTCDate(yesterday.getUTCDate() - 1)
+  const yesterdayStr = toDateStr(yesterday)
 
   // This week — Monday to today
   const weekStart = new Date(now)
-  const day = weekStart.getDay()
+  const day = weekStart.getUTCDay() // 0 = Sun, 1 = Mon
   const diff = day === 0 ? -6 : 1 - day
-  weekStart.setDate(weekStart.getDate() + diff)
-  const weekStartStr = `${weekStart.getFullYear()}-${String(weekStart.getMonth() + 1).padStart(2, '0')}-${String(weekStart.getDate()).padStart(2, '0')}`
+  weekStart.setUTCDate(weekStart.getUTCDate() + diff)
+  const weekStartStr = toDateStr(weekStart)
 
   // This month
-  const monthStartStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
-  const currentMonth = now.getMonth() // 0-indexed
+  const monthStartStr = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-01`
+  const currentMonth  = now.getUTCMonth() // 0-indexed
 
   // This year
-  const yearStartStr = `${now.getFullYear()}-01-01`
+  const yearStartStr = `${now.getUTCFullYear()}-01-01`
 
-  const todayStr = getETDateString()
-
-  return { yesterdayStr, weekStartStr, monthStartStr, yearStartStr, todayStr, currentMonth }
+  return { todayStr, yesterdayStr, weekStartStr, monthStartStr, yearStartStr, currentMonth }
 }
 
 export async function GET() {
@@ -63,66 +69,57 @@ export async function GET() {
   const agentStats = (agents || []).map(agent => {
     const agentReports = reports.filter(r => r.agent_id === agent.id)
 
-    // JotForm stats by period
     const weekReports  = agentReports.filter(r => r.report_date >= weekStartStr)
     const monthReports = agentReports.filter(r => r.report_date >= monthStartStr)
     const ytdReports   = agentReports
 
-    const sumAlp = (rows: any[]) => rows.reduce((s, r) => s + (Number(r.alp_written) || 0), 0)
-    const sumRefAlp = (rows: any[]) => rows.reduce((s, r) => s + (Number(r.referral_alp) || 0), 0)
-    const sumField = (rows: any[], field: string) => rows.reduce((s, r) => s + (Number(r[field]) || 0), 0)
+    const sumAlp    = (rows: any[]) => rows.reduce((s, r) => s + (Number(r.alp_written)   || 0), 0)
+    const sumRefAlp = (rows: any[]) => rows.reduce((s, r) => s + (Number(r.referral_alp)  || 0), 0)
+    const sumField  = (rows: any[], field: string) => rows.reduce((s, r) => s + (Number(r[field]) || 0), 0)
 
-    // Historical ALP from monthly_alp array (past months only)
+    // Historical ALP from monthly_alp array
     const monthly = agent.monthly_alp || []
     let historicalYTD   = 0
     let historicalMonth = 0
     for (let i = 0; i < 12; i++) {
       const val = Number(monthly[i]) || 0
-      if (i < currentMonth) {
-        historicalYTD += val
-      } else if (i === currentMonth) {
-        historicalMonth += val
-      }
+      if (i < currentMonth)      historicalYTD   += val
+      else if (i === currentMonth) historicalMonth += val
     }
 
-    // JotForm ALP totals
     const jotWeekAlp  = sumAlp(weekReports)
     const jotMonthAlp = sumAlp(monthReports)
     const jotYtdAlp   = sumAlp(ytdReports)
 
-    // Combined ALP (historical + JotForm)
     const weekAlp  = jotWeekAlp
     const monthAlp = jotMonthAlp + historicalMonth
     const ytdAlp   = jotYtdAlp  + historicalYTD + historicalMonth
 
-    // Referral ALP
     const weekRefAlp  = sumRefAlp(weekReports)
     const monthRefAlp = sumRefAlp(monthReports)
     const ytdRefAlp   = sumRefAlp(ytdReports)
 
-    // Ratios from all JotForm data
-    const totalAppts  = sumField(ytdReports, 'appointments_set')
-    const totalSits   = sumField(ytdReports, 'sits')
-    const totalSales  = sumField(ytdReports, 'sales')
-    const closeRatio  = totalSits  > 0 ? Math.round((totalSales / totalSits)  * 100) : 0
-    const showRatio   = totalAppts > 0 ? Math.round((totalSits  / totalAppts) * 100) : 0
+    const totalAppts = sumField(ytdReports, 'appointments_set')
+    const totalSits  = sumField(ytdReports, 'sits')
+    const totalSales = sumField(ytdReports, 'sales')
+    const closeRatio = totalSits  > 0 ? Math.round((totalSales / totalSits)  * 100) : 0
+    const showRatio  = totalAppts > 0 ? Math.round((totalSits  / totalAppts) * 100) : 0
 
-    // Day streak — consecutive days with sales > 0
+    // Day streak — consecutive days with sales > 0 going back from today
     const saleDates = new Set(agentReports.filter(r => (r.sales || 0) > 0).map(r => r.report_date))
-    let streak = 0
-    const check = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }))
-    check.setHours(0, 0, 0, 0)
+    let streak    = 0
+    const check   = getETNow()
     for (let i = 0; i < 365; i++) {
-      const ds = `${check.getFullYear()}-${String(check.getMonth() + 1).padStart(2, '0')}-${String(check.getDate()).padStart(2, '0')}`
-      if (saleDates.has(ds)) { streak++; check.setDate(check.getDate() - 1) }
+      const ds = toDateStr(check)
+      if (saleDates.has(ds)) { streak++; check.setUTCDate(check.getUTCDate() - 1) }
       else break
     }
 
     return {
-      id:           agent.id,
-      full_name:    agent.full_name,
-      tier:         agent.tier,
-      is_active:    agent.is_active,
+      id:            agent.id,
+      full_name:     agent.full_name,
+      tier:          agent.tier,
+      is_active:     agent.is_active,
       health_status: agent.health_status || 'yellow',
       ytdAlp,
       monthAlp,
@@ -138,7 +135,6 @@ export async function GET() {
     }
   })
 
-  // Sort by YTD ALP descending by default
   agentStats.sort((a, b) => b.ytdAlp - a.ytdAlp)
 
   return NextResponse.json({ data: agentStats })
