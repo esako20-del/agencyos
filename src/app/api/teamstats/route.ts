@@ -4,7 +4,8 @@ import { supabaseAdmin } from '@/lib/supabase'
 // ─── Date Helpers ─────────────────────────────────────────────────────────────
 
 function getDateRanges() {
-  const now = new Date()
+  // Use Eastern Time (UTC-4 in summer, UTC-5 in winter)
+  const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }))
 
   // Yesterday
   const yesterday = new Date(now)
