@@ -40,6 +40,8 @@ function getMonthIndex(dateStr: string): number {
 }
 
 export async function GET() {
+  export async function GET() {
+  const headers = { 'Cache-Control': 'no-store, no-cache, must-revalidate' }
   const { weekStartStr, monthStartStr, yearStartStr, todayStr, currentMonth } = getDateRanges()
 
   const { data: agents, error: agentsError } = await supabaseAdmin
