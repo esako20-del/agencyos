@@ -1,15 +1,20 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 
-// ─── Eastern Time helpers ─────────────────────────────────────────────────────
+const NO_CACHE = { 'Cache-Control': 'no-store, no-cache, must-revalidate' }
+
 function getETNow(): Date {
   const nowUTC = new Date()
-  const etOffset = -4 // EDT (UTC-4). Change to -5 in winter.
+  const etOffset = -4
   return new Date(nowUTC.getTime() + etOffset * 60 * 60 * 1000)
 }
 
 function toDateStr(d: Date): string {
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`
+}
+
+function getMonthIndex(dateStr: string): number {
+  return parseInt(dateStr.substring(5, 7)) - 1
 }
 
 function getDateRanges() {
@@ -34,14 +39,7 @@ function getDateRanges() {
   return { todayStr, yesterdayStr, weekStartStr, monthStartStr, yearStartStr, currentMonth, currentYear }
 }
 
-// Get the month index (0-11) from a date string like "2026-05-14"
-function getMonthIndex(dateStr: string): number {
-  return parseInt(dateStr.substring(5, 7)) - 1
-}
-
 export async function GET() {
-  export async function GET() {
-  const headers = { 'Cache-Control': 'no-store, no-cache, must-revalidate' }
   const { weekStartStr, monthStartStr, yearStartStr, todayStr, currentMonth } = getDateRanges()
 
   const { data: agents, error: agentsError } = await supabaseAdmin
@@ -65,49 +63,36 @@ export async function GET() {
     const agentReports = reports.filter(r => r.agent_id === agent.id)
     const monthly      = agent.monthly_alp || []
 
-    // ── ALP calculation: manual overrides JotForm per month ──────────────────
-    // For each month 0-11:
-    //   if monthly_alp[i] > 0 → use that as the ALP for that month (ignore JotForm)
-    //   if monthly_alp[i] = 0 → use sum of JotForm reports for that month
-
-    // Group JotForm ALP by month index
+    // Group JotForm ALP by month
     const jotAlpByMonth: number[] = Array(12).fill(0)
     for (const r of agentReports) {
       const mi = getMonthIndex(r.report_date)
       jotAlpByMonth[mi] += Number(r.alp_written) || 0
     }
 
-    // Build final ALP per month
+    // Manual overrides JotForm per month for ALP only
     const finalAlpByMonth: number[] = Array(12).fill(0)
     for (let i = 0; i <= currentMonth; i++) {
       const manualVal = Number(monthly[i]) || 0
       finalAlpByMonth[i] = manualVal > 0 ? manualVal : jotAlpByMonth[i]
     }
 
-    // YTD ALP = sum of all months up to and including current month
-    const ytdAlp = finalAlpByMonth.reduce((s, v) => s + v, 0)
-
-    // This Month ALP
+    const ytdAlp   = finalAlpByMonth.reduce((s, v) => s + v, 0)
     const monthAlp = finalAlpByMonth[currentMonth]
-
-    // This Week ALP — always from JotForm (week doesn't span months cleanly)
-    const weekAlp = agentReports
+    const weekAlp  = agentReports
       .filter(r => r.report_date >= weekStartStr)
       .reduce((s, r) => s + (Number(r.alp_written) || 0), 0)
 
-    // ── Referral ALP — always from JotForm ───────────────────────────────────
     const ytdRefAlp   = agentReports.reduce((s, r) => s + (Number(r.referral_alp) || 0), 0)
     const monthRefAlp = agentReports.filter(r => r.report_date >= monthStartStr).reduce((s, r) => s + (Number(r.referral_alp) || 0), 0)
     const weekRefAlp  = agentReports.filter(r => r.report_date >= weekStartStr).reduce((s, r) => s + (Number(r.referral_alp) || 0), 0)
 
-    // ── Ratios — always from JotForm ──────────────────────────────────────────
     const totalAppts = agentReports.reduce((s, r) => s + (Number(r.appointments_set) || 0), 0)
     const totalSits  = agentReports.reduce((s, r) => s + (Number(r.sits)             || 0), 0)
     const totalSales = agentReports.reduce((s, r) => s + (Number(r.sales)            || 0), 0)
     const closeRatio = totalSits  > 0 ? Math.round((totalSales / totalSits)  * 100) : 0
     const showRatio  = totalAppts > 0 ? Math.round((totalSits  / totalAppts) * 100) : 0
 
-    // ── Day streak ────────────────────────────────────────────────────────────
     const saleDates = new Set(agentReports.filter(r => (r.sales || 0) > 0).map(r => r.report_date))
     let streak    = 0
     const check   = getETNow()
@@ -123,9 +108,9 @@ export async function GET() {
       tier:          agent.tier,
       is_active:     agent.is_active,
       health_status: agent.health_status || 'yellow',
-      ytdAlp,
-      monthAlp,
-      weekAlp,
+      ytdAlp:        Math.round(ytdAlp * 100) / 100,
+      monthAlp:      Math.round(monthAlp * 100) / 100,
+      weekAlp:       Math.round(weekAlp * 100) / 100,
       ytdRefAlp,
       monthRefAlp,
       weekRefAlp,
@@ -139,5 +124,5 @@ export async function GET() {
 
   agentStats.sort((a, b) => b.ytdAlp - a.ytdAlp)
 
-  return NextResponse.json({ data: agentStats }, { headers })
+  return NextResponse.json({ data: agentStats }, { headers: NO_CACHE })
 }
