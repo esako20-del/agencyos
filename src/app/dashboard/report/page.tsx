@@ -9,11 +9,17 @@ const ALL_AGENTS = [
 ]
 
 function todayStr() {
-  return new Date().toISOString().split('T')[0]
+  const now = new Date()
+  const etDate = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }))
+  const y = etDate.getFullYear()
+  const m = String(etDate.getMonth() + 1).padStart(2, '0')
+  const d = String(etDate.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
 }
 
 function formatDate(str: string) {
-  return new Date(str).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
+  const d = new Date(str + 'T00:00:00')
+  return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
 }
 
 export default function ReportPage() {
@@ -79,7 +85,7 @@ export default function ReportPage() {
           { label: 'Submitted', value: reports.length, color: '#00E5A0' },
           { label: 'Missing', value: missing.length, color: '#EF4444' },
           { label: 'Total Sales', value: totals.sales, color: '#00E5A0' },
-          { label: 'Total ALP', value: `$${(totals.alp / 1000).toFixed(1)}K`, color: '#60A5FA' },
+          { label: 'Total ALP', value: totals.alp > 0 ? `$${(totals.alp / 1000).toFixed(1)}K` : '$0', color: '#60A5FA' },
         ].map(s => (
           <div key={s.label} style={{ background: '#0C1018', border: `1px solid ${s.color}22`, borderRadius: '10px', padding: '14px', textAlign: 'center' }}>
             <div style={{ fontSize: '28px', fontWeight: '700', color: s.color }}>{s.value}</div>
@@ -112,7 +118,7 @@ export default function ReportPage() {
               { label: 'Ref Appts', value: totals.refAppts, color: '#A78BFA' },
               { label: 'Ref Sits', value: totals.refSits, color: '#A78BFA' },
               { label: 'Ref Sales', value: totals.refSales, color: '#A78BFA' },
-              { label: 'Ref ALP', value: `$${(totals.refAlp / 1000).toFixed(1)}K`, color: '#A78BFA' },
+              { label: 'Ref ALP', value: totals.refAlp > 0 ? `$${(totals.refAlp / 1000).toFixed(1)}K` : '$0', color: '#A78BFA' },
             ].map(s => (
               <div key={s.label} style={{ background: '#111820', borderRadius: '8px', padding: '10px', textAlign: 'center' }}>
                 <div style={{ fontSize: '20px', fontWeight: '700', color: s.color }}>{s.value}</div>
@@ -145,7 +151,9 @@ export default function ReportPage() {
               </thead>
               <tbody>
                 {reports.map((r, i) => {
-                  const time = r.submitted_at ? new Date(r.submitted_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : '—'
+                  const time = r.submitted_at
+                    ? new Date(r.submitted_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York' })
+                    : '—'
                   return (
                     <tr key={i} style={{ borderBottom: '1px solid rgba(28,42,58,0.5)' }}>
                       <td style={{ padding: '8px 10px', fontSize: '12px', fontWeight: '600' }}>{r.agent?.full_name || '—'}</td>
