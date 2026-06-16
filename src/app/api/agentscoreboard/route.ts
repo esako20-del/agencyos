@@ -139,5 +139,5 @@ export async function GET() {
 
   agentStats.sort((a, b) => b.ytdAlp - a.ytdAlp)
 
-  return NextResponse.json({ data: agentStats })
+  return NextResponse.json({ data: agentStats }, { headers })
 }
