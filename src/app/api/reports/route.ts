@@ -16,7 +16,6 @@ export async function POST(req: NextRequest) {
   try {
     const text = await req.text()
 
-    // Parse rawRequest JSON from JotForm multipart data
     const rawMatch = text.match(/"rawRequest"\r\n\r\n(\{[\s\S]*?\})\r\n-+/)
     if (!rawMatch) {
       return NextResponse.json({ error: 'Could not parse rawRequest' }, { status: 400 })
@@ -24,9 +23,8 @@ export async function POST(req: NextRequest) {
 
     const raw = JSON.parse(rawMatch[1])
 
-    // ── Extract fields using confirmed JotForm field IDs ──────────────────────
-    const agentName = raw['q3_agentName']                        || ''
-    const dateObj   = raw['q4_date']                             || {}
+    const agentName    = raw['q3_agentName']                     || ''
+    const dateObj      = raw['q4_date']                          || {}
     const appointments = parseInt(raw['q6_totalAppointments']    || '0') || 0
     const sits         = parseInt(raw['q7_totalSits']            || '0') || 0
     const sales        = parseInt(raw['q8_number8']              || '0') || 0
@@ -38,9 +36,6 @@ export async function POST(req: NextRequest) {
     const winOfDay     = raw['q14_winOf'] || raw['q15_winOf']    || ''
     const struggles    = raw['q15_notes'] || raw['q16_notes']    || ''
 
-    // ── Format date ───────────────────────────────────────────────────────────
-    // Use the date the agent selected on the form if available
-    // Fall back to today in Eastern Time
     let formattedDate = getETDateString()
     if (dateObj.year && dateObj.month && dateObj.day) {
       formattedDate = `${dateObj.year}-${String(dateObj.month).padStart(2, '0')}-${String(dateObj.day).padStart(2, '0')}`
@@ -50,7 +45,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Agent name empty' }, { status: 400 })
     }
 
-    // ── Find agent in database ────────────────────────────────────────────────
     const firstName = agentName.split(' ')[0]
     const { data: agents } = await supabaseAdmin
       .from('agents')
@@ -64,7 +58,6 @@ export async function POST(req: NextRequest) {
 
     const agentId = agents[0].id
 
-    // ── Save to database ──────────────────────────────────────────────────────
     const { data, error } = await supabaseAdmin
       .from('daily_reports')
       .upsert({
@@ -91,6 +84,43 @@ export async function POST(req: NextRequest) {
 
   } catch (e: any) {
     console.error('Webhook error:', e.message)
+    return NextResponse.json({ error: e.message }, { status: 500 })
+  }
+}
+
+// ─── PATCH: Edit an existing daily report by id ───────────────────────────────
+export async function PATCH(req: NextRequest) {
+  try {
+    const body = await req.json()
+    const { id, ...updates } = body
+
+    if (!id) {
+      return NextResponse.json({ error: 'Report id required' }, { status: 400 })
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from('daily_reports')
+      .update({
+        report_date:           updates.report_date,
+        appointments_set:      updates.appointments_set,
+        sits:                  updates.sits,
+        sales:                 updates.sales,
+        alp_written:           updates.alp_written,
+        referral_appointments: updates.referral_appointments,
+        referral_sits:         updates.referral_sits,
+        referral_sales:        updates.referral_sales,
+        referral_alp:          updates.referral_alp,
+        win_of_day:            updates.win_of_day,
+        struggles:             updates.struggles,
+      })
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+    return NextResponse.json({ success: true, data })
+
+  } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 })
   }
 }
